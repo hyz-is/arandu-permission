@@ -278,7 +278,7 @@ func TestTheModuleRefusesToBootUntilItsViewsAreLinked(t *testing.T) {
 	}
 }
 
-// TestThePackageShipsNoCommandOfItsOwn holds the mechanism rather than the
+// TestThePackageShipsNoProgramOfItsOwn holds the mechanism rather than the
 // declaration: publishing is declared here and performed by the CLI, which
 // reads the modules an application registered and writes what each of them
 // offers.
@@ -286,8 +286,14 @@ func TestTheModuleRefusesToBootUntilItsViewsAreLinked(t *testing.T) {
 // A program in this module that copied files into a project would be a second
 // answer to "how do I get these views", and two answers disagree the first time
 // one of them learns something the other does not. The file behind a build tag
-// is not one, because the compiler never reads it.
-func TestThePackageShipsNoCommandOfItsOwn(t *testing.T) {
+// is not one, because the compiler never reads it -- which is what the example
+// is, and why it does not count.
+//
+// What this package does ship is Commands, and it is not a program: it is a
+// slice of values an application adds to its own console, on purpose. Nothing
+// in it writes a file, nothing in it is a second entry point, and an installer
+// that never calls it has a binary that never had them.
+func TestThePackageShipsNoProgramOfItsOwn(t *testing.T) {
 	t.Parallel()
 
 	for _, source := range productionGoFiles(t, packageRoot(t)) {

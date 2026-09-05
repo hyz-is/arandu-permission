@@ -301,6 +301,113 @@ func (s *PermissionService) CreateGroup(ctx context.Context, actor security.Subj
 	return candidate, nil
 }
 
+// BootstrapRequest is the first group of an installation.
+//
+// It is one request rather than three calls because the three are one thing: a
+// group carrying the administration of permissions, with somebody in it. Any two
+// of those without the third is a state nobody can act from.
+type BootstrapRequest struct {
+	// Slug, Name and Description are the group's, as they are anywhere else.
+	Slug        string
+	Name        string
+	Description string
+
+	// Actions are what the group carries on top of this package's own, which it
+	// always carries. Every one of them is checked against the catalogue.
+	Actions []security.Action
+
+	// Members are who is in it, and at least one is required: a system group
+	// with nobody in it is refused everywhere else in this package, and there is
+	// no reason for the one path that creates it to be able to produce one.
+	Members []string
+}
+
+// Validate reports the errors per field.
+func (r BootstrapRequest) Validate() validation.Errors {
+	e := CreateGroupRequest{Slug: r.Slug, Name: r.Name, Description: r.Description}.Validate()
+	if len(r.Members) == 0 {
+		e.Add("members", "at least one person has to be in the first group, or nobody can administer anything")
+	}
+	return e
+}
+
+// Compile-time proof that the request honors the validation contract.
+var _ validation.Validatable = BootstrapRequest{}
+
+// Bootstrap creates the first group of a tenant, and refuses once there is one.
+//
+// It is the only door in this package that opens without somebody already
+// carrying a permission, and it exists because there is a moment when nobody
+// can: an installation with no group has nobody who may create one, and the
+// screen that creates them is behind the permission the first group is meant to
+// confer.
+//
+// The door is not a hole. It is shut by the state rather than by a flag: the
+// first thing it does after authorizing is ask whether the tenant has any group
+// at all, and one is enough to refuse. From then on every write goes through a
+// subject somebody's session produced, and there is no way back to here.
+//
+// The subject it acts as is constructed, and is what an installation would
+// otherwise have hand-rolled in a seed. Doing it here rather than in every
+// project is what makes the guard exist at all: a subject written by hand in a
+// seed script has no such check on it and stays runnable forever.
+//
+// Everything it writes goes through the same use cases a screen calls, so the
+// same policies answer, the same catalogue is checked and the same version token
+// moves. It is not a second write path.
+func (s *PermissionService) Bootstrap(ctx context.Context, tenant string, in BootstrapRequest) (*Group, error) {
+	if errs := in.Validate(); errs.Any() {
+		return nil, errs
+	}
+	if !security.ValidTenant(tenant) {
+		return nil, fmt.Errorf("permission: %q cannot be a tenant: lowercase letters, digits, - and _, up to 64 characters", tenant)
+	}
+	for _, action := range in.Actions {
+		if !s.catalogue.Has(action) {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownAction, action)
+		}
+	}
+
+	// What the group will carry, which is also what the acting subject has to
+	// hold in order to grant it: nobody hands out what they do not hold, and
+	// that rule is not suspended here.
+	carries := append(Actions(), in.Actions...)
+	roles := make([]string, 0, len(carries))
+	for _, action := range carries {
+		roles = append(roles, string(action))
+	}
+	actor := security.Subject{ID: "bootstrap", Tenant: tenant, Roles: roles, Verified: true}
+
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionCreate, Group{Slug: in.Slug, Name: in.Name})
+	if err != nil {
+		return nil, err
+	}
+	occupied, err := Groups(s.db).NewQuery().Exists(ctx, g)
+	if err != nil {
+		return nil, err
+	}
+	if occupied {
+		return nil, ErrBootstrapped
+	}
+
+	record, err := s.CreateGroup(ctx, actor, CreateGroupRequest{
+		Slug:        in.Slug,
+		Name:        in.Name,
+		Description: in.Description,
+		System:      true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.SetActions(ctx, actor, record.ID, carries); err != nil {
+		return nil, err
+	}
+	if _, err := s.SetMembers(ctx, actor, record.ID, in.Members); err != nil {
+		return nil, err
+	}
+	return record, nil
+}
+
 // UpdateGroup changes what a group is called.
 //
 // It does not change what the group carries. Nothing about the name or the
@@ -831,6 +938,33 @@ func (s *PermissionService) ResolveOwn(ctx context.Context, actor security.Subje
 func (s *PermissionService) Version(ctx context.Context, actor security.Subject) (int64, error) {
 	g, err := security.Authorize(ctx, s.members, actor, PermissionResolve, GroupUser{UserID: actor.ID})
 	if err != nil {
+		return 0, err
+	}
+	return s.version(ctx, g)
+}
+
+// Refresh moves the tenant's token without changing anything anybody may do,
+// and returns the new value.
+//
+// It is what makes every process re-read on its next request. The reference
+// clears a shared cache; there is nothing shared here to clear, so the
+// instruction is carried by the one value every process already consults -- and
+// it reaches replicas nothing has a way to talk to.
+//
+// It is not what makes revocation correct. Every write moves the token already,
+// and a deployment that needed this in order to be safe would be a deployment
+// with a write path that forgot to. It is for the operator who changed a row by
+// hand.
+//
+// It asks for the permission to change a group rather than to read one: it
+// writes, and something that writes should not be reachable by whoever may only
+// look.
+func (s *PermissionService) Refresh(ctx context.Context, actor security.Subject) (int64, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionUpdate, Group{})
+	if err != nil {
+		return 0, err
+	}
+	if err := s.bump(ctx, g); err != nil {
 		return 0, err
 	}
 	return s.version(ctx, g)
