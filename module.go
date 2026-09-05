@@ -12,28 +12,35 @@
 // links a group to a permission that already exists because some policy reads
 // it; it cannot bring one into being.
 //
+// A permission reaches a person two ways -- through a group, or given to them in
+// their own right. Both are the same action from the same closed catalogue, both
+// land in the same resolved set, and the same policy in Go decides with the
+// result. Two sources, one decision.
+//
 // The files are laid out by role rather than by layer, so the whole package
 // reads top to bottom:
 //
-//	module.go      -> registration, routes, handlers and migrations
-//	config.go      -> what the application passes in
-//	catalogue.go   -> the closed set of actions a group may carry
-//	model.go       -> the entities, and what they may answer with
-//	policy.go      -> who may do what
-//	service.go     -> the rules and Model access, after authorization
-//	resolver.go    -> what a request carries into every policy
-//	views.go       -> the files the application takes ownership of
+//	module.go       -> registration, routes, handlers and migrations
+//	config.go       -> what the application passes in
+//	catalogue.go    -> the closed set of actions, and the selectors that name them
+//	model.go        -> the entities, and what they may answer with
+//	policy.go       -> who may do what
+//	service.go      -> the rules and Model access, after authorization
+//	resolver.go     -> what a request carries into every policy, and the route guard
+//	event.go        -> what the application is told, once it has happened
+//	translation.go  -> the sentences a screen draws
+//	command.go      -> the same use cases, from a terminal
+//	views.go        -> the files the application takes ownership of
 //
 // An application registers it explicitly. There is no service provider, no
 // container and no discovery: the wiring is a few lines somebody wrote, and
 // reading them is how they learn what the application is made of.
 //
 // The first group has to come from outside a request, because nobody can
-// administer permissions until somebody carries them. A seed builds the subject
-// it acts as -- an identifier, the tenant, and the actions of this package as
-// its roles -- and calls the same service every screen calls. There is no second
-// write path and no escape hatch: the seed is authorized by the same policies,
-// by a subject the operator running it constructed.
+// administer permissions until somebody carries them. PermissionService.Bootstrap
+// is that door and it is shut by the state: it refuses as soon as the tenant has
+// a group, so the moment there is somebody to authorize as, there is no way back
+// to it. Everything it writes goes through the same use cases a screen calls.
 package permission
 
 import (

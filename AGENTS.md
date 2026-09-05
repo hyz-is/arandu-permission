@@ -1,8 +1,8 @@
 # Working on Arandu Permission
 
-This is an Arandu package: one entity with an embedded Hesape Model, one policy
-that decides about it, one service that owns the database handle, and the routes
-that reach them.
+This is an Arandu package: entities with embedded Hesape Models, policies that
+decide about them, one service that owns the database handle, and the routes,
+commands and screens that reach it.
 It is a Go module somebody `go get`s and registers by hand in their own
 `bootstrap/app.go`, which is the whole difference from working in an
 application. There is no service provider, no container and no discovery — if a
@@ -62,28 +62,41 @@ this one must prove about itself it proves in its own suite or nowhere.
 
 | | measured with |
 | --- | --- |
-| 6 Go files, one per role, all in one package at the root | `grep -l '^package permission' *.go` |
-| 6 test files, 37 tests | `find tests -name '*_test.go'` · `go test -count=1 ./... -v \| grep -c '^--- PASS'` |
-| 3 routes | `grep -c 'r.Action' module.go` |
-| 5 actions the policy answers about | `grep -cE '^\t[A-Za-z]+ security.Action = ' policy.go` |
+| 11 Go files, one per role, all in one package at the root | `ls *.go \| wc -l` |
+| 13 test files | `find tests -name '*_test.go' \| wc -l` |
+| 13 routes | `grep -c 'guarded.Action' module.go` |
+| 12 actions the policies answer about | `grep -cE '^\t[A-Za-z]+ security.Action = ' policy.go` |
+| 8 commands | `grep -c '^\t\t\tRun:' command.go` |
+| 2 locales | `ls resources/lang \| wc -l` |
 | 2 direct dependencies, both under `arandu-io` | `go list -m -f '{{if and (not .Indirect) (not .Main)}}{{.Path}} {{.Version}}{{end}}' all` |
 
 The layout is by role rather than by layer, so the package reads top to bottom:
 
 ```
-module.go      registration, routes, handlers and migrations
-config.go      what the application passes in
-model.go       the entity, and what it may answer with
-policy.go      who may do what
-service.go     the rules and authorized Model access
-views.go       the files the application takes ownership of
+module.go       registration, routes, handlers and migrations
+config.go       what the application passes in
+catalogue.go    the closed set of actions, and the selectors that name them
+model.go        the entities, and what they may answer with
+policy.go       who may do what
+service.go      the rules and authorized Model access
+resolver.go     what a request carries into every policy, and the route guard
+event.go        what the application is told, once it has happened
+translation.go  the sentences a screen draws
+command.go      the same use cases, from a terminal
+views.go        the files the application takes ownership of
 ```
 
-`Groups(db)` configures the table, string primary key and default
-`tenant_id` scope. Its terminals return `*Permission`/`[]*Permission`; keep those
-pointers intact because copying an embedded Model leaves its `Entity` pointer
-aimed at the original allocation. `Resource` and `Collection` are the deliberate
-response snapshot boundary.
+`Groups(db)` configures the table, string primary key and default `tenant_id`
+scope, and `GroupActions`, `GroupUsers`, `UserActions` and `Versions` do the same
+for the other four tables. Their terminals return pointers; keep those intact,
+because copying an embedded Model leaves its `Entity` pointer aimed at the
+original allocation.
+
+**A new Model constructor has to be added to `modelConstructors` in
+`tests/Unit/audit_test.go` in the same commit.** A table the ordering audit does
+not watch is a table something can reach without a decision, and nothing else
+would say so. The audit fails when the list and `model.go` disagree, in both
+directions.
 
 ## What does not exist here
 
@@ -101,6 +114,9 @@ rejected in review. None of them is missing by accident.
 | a `panic` on bad wiring | an `error` from `New`. A wiring mistake found at boot costs one restart |
 | a third dependency | an argument, first. This module is imported into other people's builds |
 | a command of its own that copies files into a project | `Publishes()`, which declares a tagged tree and nothing more. `aru vendor:publish` asks the application which modules it registered and writes what each one declares, so one command serves every installed package instead of one command per package |
+| a `package main` anywhere the compiler reads | `Commands()`, a slice of values an application adds to its own console. The example is a `main` behind `//go:build example`, which the compiler never reads unless somebody asks for it |
+| a permission stored as a pattern, matched at decision time | `Catalogue.Match`, which expands a selector where it is written. What lands in a row is always a concrete action the catalogue holds |
+| a middleware, a helper or a screen that decides on a group name | nothing. A group is where a permission came from; it is renamed by whoever administers it and is never checked against the catalogue |
 
 ## The four properties
 
@@ -138,7 +154,13 @@ which is a warning there and a failure here because `go test` has one outcome.
 Adding an outbound call, a file write or a process means declaring it in the
 same commit, and the suite is what says so.
 
-The fifth property is not syntax, so it is held where the routes exist.
+The five protections against real rows are in `tests/Feature/protections_test.go`
+and `tests/Feature/direct_test.go`, and the second file exists because none of
+the four carries over to a new table by itself: self-elevation, cross-tenant
+access, the stale cache and the last administrator are asked again of the rows a
+direct grant writes.
+
+The fifth structural property is not syntax, so it is held where the routes exist.
 `TestNoRouteLandsInTheFrameworkNamespace`, in `tests/Feature/routes_test.go`,
 registers the module and reads the table back: a prefix arrives through
 configuration, and `/_arandu/` is refused when the application boots — in the

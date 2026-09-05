@@ -20,7 +20,7 @@ import (
 // It is written here and compared against the changelog rather than read out of
 // it: a test that took the number from the file it checks would pass on a file
 // that lost its heading.
-const currentVersion = "0.1.0"
+const currentVersion = "0.2.0"
 
 func TestTheManifestFrameworkFloorMatchesGoMod(t *testing.T) {
 	root := packageRoot(t)
