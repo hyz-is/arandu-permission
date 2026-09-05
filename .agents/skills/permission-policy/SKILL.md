@@ -66,7 +66,7 @@ arrives with an empty `ID` and is still authorized at all. The zero `Subject` â€
 an empty `ID` with no guest marker â€” is refused by `Authorize` before `Can` is
 consulted, because it is almost always a session that failed to load, and a
 policy asked about nobody answers about nobody.
-`TestAuthorizeRefusesASubjectThatIsNobody` at `tests/Unit/policy_test.go:91`
+`TestAuthorizeRefusesASubjectThatIsNobody` at `tests/Unit/policy_test.go`
 holds that apart from the guest case, and `TestThePolicyDeniesAGuest:79` proves
 a guest is refused until somebody writes a rule for one.
 
@@ -87,7 +87,7 @@ The empty `ID` is exempt because it is the candidate that has not been stored
 yet, and it belongs to nobody until it is written with the tenant off the Grant.
 
 **4. Add the action to the test list if you added an action.** `everyAction` at
-`tests/Unit/policy_test.go:31` is the whole set the default-deny tests walk. A
+`tests/Unit/policy_test.go` is the whole set the default-deny tests walk. A
 list holding four of five passes while the fifth is open, which is the only
 state in which any of this matters.
 

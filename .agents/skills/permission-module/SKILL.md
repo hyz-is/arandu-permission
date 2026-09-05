@@ -21,6 +21,42 @@ Those two lines are compile-time proof and they belong at the top of
 `module.go`. Add one for every contract the module takes on, so the failure lands
 here rather than at the registration in somebody else's repository.
 
+## What lives where, now that it is more than routes
+
+```
+module.go       registration, routes, handlers and migrations
+config.go       what the application passes in
+catalogue.go    the closed set of actions, and the selectors that name them
+model.go        the entities, and what they may answer with
+policy.go       who may do what
+service.go      the rules and authorized Model access
+resolver.go     what a request carries into every policy, and the route guard
+event.go        what the application is told, once it has happened
+translation.go  the sentences a screen draws
+command.go      the same use cases, from a terminal
+views.go        the files the application takes ownership of
+```
+
+Four rules cut across them, and each is held by a test that fails in a way that
+names itself:
+
+- **A new table means a new name in `modelConstructors`**, in
+  `tests/Unit/audit_test.go`, in the same commit. A table the ordering audit does
+  not watch is a table something can reach without a decision.
+- **A new exported Service method taking a context calls `security.Authorize`
+  itself.** It may not take a Grant: an exported method that took one is an
+  exported method whose caller decided, and the caller is somebody else's code.
+- **A new screen means a new name in `rendered`**, in `tests/Unit/views_test.go`.
+  A published view nothing renders is a file an application maintains for
+  nothing.
+- **A new sentence on a screen means a line in every locale.** The catalogue test
+  compares them against each other in both directions, so a line added to one is
+  a failure until it is in the others.
+
+A new command is a value in `Commands()` and never a `package main`. The audit
+refuses a buildable one, and the reason is in the test: what a program does is
+not a capability whoever ran `go get` agreed to.
+
 ## Taking on more than routes
 
 Six interfaces sit beside `Module` in `framework/foundation`, one of which this
@@ -60,7 +96,7 @@ The name is what a URL is built from. Two spellings of one address disagree, and
 the failure when they do is a link to a 404. The prefix is `m.cfg.Prefix` and
 never a literal: the application decides where the package is mounted, and
 `TestTheModuleRegistersItsRoutesUnderItsPrefix` at
-`tests/Feature/routes_test.go:94` mounts it at `/widgets` and fails if any route
+`tests/Feature/routes_test.go` mounts the module at a configured prefix and fails if any route
 came out anywhere else. It also asserts every route is tagged with the module
 name, which is what `aru route:list` groups by.
 
@@ -91,7 +127,7 @@ error page in development and a 500 in production, which is the honest outcome.
 Answering 200 with an empty body is the failure nobody debugs.
 
 **4. Add the case to the route test.** `TestAVisitorWithNoSessionReachesNothing`
-at `tests/Feature/routes_test.go:59` is a table of every route, and it asserts
+at `tests/Feature/routes_test.go` is a table of every route, and it asserts
 403 for each. It runs against `data.Wrap(nil, data.DialectSQLite)` — a handle
 over no database — so a route that got past the policy panics rather than
 passes.
@@ -158,8 +194,8 @@ did not get is worse than a number somebody wrote and was told about — that is
 why `PageSize` above `MaxPageSize` is an error and not a silent 200.
 
 Add the case to `TestTheConfigurationRefusesWhatCannotWork` at
-`tests/Unit/policy_test.go:192`, which is a map of named bad configurations, and
-to `TestNewRefusesAWiringThatCannotWork` at `tests/Feature/routes_test.go:119`
+`tests/Unit/policy_test.go`, which is a map of named bad configurations, and
+to `TestNewRefusesAWiringThatCannotWork` at `tests/Feature/routes_test.go`
 if the field can make `New` fail.
 
 ## What may leave in a response
@@ -206,7 +242,7 @@ func (createPermissions) GetName() string { return "20260823_0001_create_permiss
 ```
 
 **The name carries the order and nothing else does.** `TestTheModuleDeclaresItsSchema`
-at `tests/Feature/routes_test.go:140` requires the returned names to be sorted,
+at `tests/Feature/routes_test.go` requires the returned names to be sorted,
 requires none to be empty, and requires every one to satisfy
 `migrations.ReversibleMigration` — the migrator finds `Down` by type assertion,
 so a `Down` with the wrong signature is a rollback that silently does nothing.
