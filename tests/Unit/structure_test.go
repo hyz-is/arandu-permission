@@ -103,14 +103,14 @@ func TestThePackageUsesTheModelFirstDataPath(t *testing.T) {
 		},
 		"service.go": {
 			"db     *data.DB",
-			"func NewPermissionService(db *data.DB, catalogue Catalogue) *PermissionService",
+			"func NewPermissionService(db *data.DB, catalogue Catalogue, listeners ...Listener) *PermissionService",
 			"Groups(s.db)",
 			"GroupActions(s.db)",
 			"GroupUsers(s.db)",
 			") (*Group, error)",
 		},
 		"module.go": {
-			"NewPermissionService(db, catalogue)",
+			"NewPermissionService(db, catalogue, cfg.Listeners...)",
 		},
 	}
 	for path, required := range wants {

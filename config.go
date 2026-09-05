@@ -68,6 +68,19 @@ type Config struct {
 	// somebody wrote and was told about.
 	PageSize int
 
+	// Listeners are told what changed, after it has changed.
+	//
+	// They are handed in here rather than registered afterwards, so that what
+	// an application does when a permission moves is written at the one place
+	// the module is wired and read there. An empty list is the ordinary case
+	// and costs nothing: there is no flag to turn events on, because a flag
+	// beside an empty list is two ways to say the same thing and only one of
+	// them would be checked.
+	//
+	// Each one runs on the path of the request that caused the change. See
+	// Listener for what that means.
+	Listeners []Listener
+
 	// CacheSize is how many resolved subjects one process remembers. Zero means
 	// DefaultCacheSize. It bounds memory and nothing else: the remembered
 	// answer is only used while the tenant's token is unchanged, so forgetting

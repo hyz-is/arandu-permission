@@ -64,12 +64,19 @@ type PermissionService struct {
 	// no policy reads is not a permission, and storing it would put a promise
 	// on a screen that nothing keeps.
 	catalogue Catalogue
+	// listeners are told what changed once it has. They are a field rather than
+	// a registration, so a service built for a test is a service that tells
+	// nobody unless the test asked it to.
+	listeners []Listener
 }
 
 // NewPermissionService wires the service over the application's database handle
 // and the catalogue its code declares.
-func NewPermissionService(db *data.DB, catalogue Catalogue) *PermissionService {
-	return &PermissionService{db: db, catalogue: catalogue}
+//
+// The listeners are variadic and last, so a caller that wants none writes
+// nothing rather than nil.
+func NewPermissionService(db *data.DB, catalogue Catalogue, listeners ...Listener) *PermissionService {
+	return &PermissionService{db: db, catalogue: catalogue, listeners: listeners}
 }
 
 // Catalogue returns the closed set of actions a group may carry.
@@ -285,6 +292,12 @@ func (s *PermissionService) CreateGroup(ctx context.Context, actor security.Subj
 	if _, err := candidate.Save(ctx, g); err != nil {
 		return nil, err
 	}
+	s.notify(ctx, g, Event{
+		Kind:      GroupCreated,
+		ActorID:   actor.ID,
+		GroupID:   candidate.ID,
+		GroupSlug: candidate.Slug,
+	})
 	return candidate, nil
 }
 
@@ -320,6 +333,12 @@ func (s *PermissionService) UpdateGroup(ctx context.Context, actor security.Subj
 	if _, err := record.Save(ctx, g); err != nil {
 		return nil, err
 	}
+	s.notify(ctx, g, Event{
+		Kind:      GroupUpdated,
+		ActorID:   actor.ID,
+		GroupID:   record.ID,
+		GroupSlug: record.Slug,
+	})
 	return record, nil
 }
 
@@ -346,7 +365,7 @@ func (s *PermissionService) DeleteGroup(ctx context.Context, actor security.Subj
 		return err
 	}
 
-	return data.Transaction(ctx, s.db, func(ctx context.Context) error {
+	if err := data.Transaction(ctx, s.db, func(ctx context.Context) error {
 		if _, err := GroupActions(s.db).NewQuery().Where("group_id", "=", record.ID).Delete(ctx, g); err != nil {
 			return err
 		}
@@ -357,7 +376,22 @@ func (s *PermissionService) DeleteGroup(ctx context.Context, actor security.Subj
 			return err
 		}
 		return s.bump(ctx, g)
+	}); err != nil {
+		return err
+	}
+
+	version, err := s.version(ctx, g)
+	if err != nil {
+		return err
+	}
+	s.notify(ctx, g, Event{
+		Kind:      GroupDeleted,
+		ActorID:   actor.ID,
+		GroupID:   record.ID,
+		GroupSlug: record.Slug,
+		Version:   version,
 	})
+	return nil
 }
 
 // ActionsOf returns the actions one group carries, sorted.
@@ -489,6 +523,10 @@ func (s *PermissionService) SetActions(ctx context.Context, actor security.Subje
 	if err != nil {
 		return Change{}, err
 	}
+	base := Event{ActorID: actor.ID, GroupID: record.ID, GroupSlug: record.Slug}
+	if err := s.announce(ctx, g, base, ActionsAttached, ActionsDetached, change, true); err != nil {
+		return Change{}, err
+	}
 	return change, nil
 }
 
@@ -597,6 +635,10 @@ func (s *PermissionService) SetMembers(ctx context.Context, actor security.Subje
 		return s.bump(ctx, g)
 	})
 	if err != nil {
+		return Change{}, err
+	}
+	base := Event{ActorID: actor.ID, GroupID: record.ID, GroupSlug: record.Slug}
+	if err := s.announce(ctx, g, base, MembersAttached, MembersDetached, change, false); err != nil {
 		return Change{}, err
 	}
 	return change, nil
@@ -717,6 +759,10 @@ func (s *PermissionService) SetDirectActions(ctx context.Context, actor security
 		return s.bump(ctx, g)
 	})
 	if err != nil {
+		return Change{}, err
+	}
+	base := Event{ActorID: actor.ID, UserID: userID}
+	if err := s.announce(ctx, g, base, ActionsAttached, ActionsDetached, change, true); err != nil {
 		return Change{}, err
 	}
 	return change, nil
@@ -1247,6 +1293,48 @@ func (s *PermissionService) bump(ctx context.Context, g security.Grant) error {
 	row.Version = next
 	_, err = row.Save(ctx, g)
 	return err
+}
+
+// announce reports a bulk change to the listeners, as one event per direction.
+//
+// Two events rather than one carrying both lists, because that is the shape a
+// listener wants: "these were given" and "these were taken away" are separate
+// lines in an audit log and separate reasons to act, and a listener handed one
+// event would begin by splitting it back into two.
+//
+// It reads the token after the write so that every event of the change carries
+// the same one. A listener that keeps its own copy of anything compares that
+// rather than a clock.
+func (s *PermissionService) announce(ctx context.Context, g security.Grant, base Event, attached, detached EventKind, change Change, actions bool) error {
+	if len(s.listeners) == 0 {
+		return nil
+	}
+	version, err := s.version(ctx, g)
+	if err != nil {
+		return err
+	}
+	base.Version = version
+
+	for _, side := range []struct {
+		kind   EventKind
+		values []string
+	}{{attached, change.Added}, {detached, change.Removed}} {
+		if len(side.values) == 0 {
+			continue
+		}
+		event := base
+		event.Kind = side.kind
+		if actions {
+			event.Actions = make([]security.Action, 0, len(side.values))
+			for _, value := range side.values {
+				event.Actions = append(event.Actions, security.Action(value))
+			}
+		} else {
+			event.Members = append([]string(nil), side.values...)
+		}
+		s.notify(ctx, g, event)
+	}
+	return nil
 }
 
 // refOf is one group as something else refers to it.

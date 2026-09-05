@@ -127,7 +127,7 @@ func New(cfg Config, db *data.DB, sessions *security.SessionStore, csrf *securit
 		return nil, err
 	}
 	cfg = cfg.withDefaults()
-	service := NewPermissionService(db, catalogue)
+	service := NewPermissionService(db, catalogue, cfg.Listeners...)
 	return &Module{
 		cfg:      cfg,
 		svc:      service,
