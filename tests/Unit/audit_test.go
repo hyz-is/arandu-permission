@@ -275,7 +275,8 @@ func takesParameterNamed(function *ast.FuncDecl, name string) bool {
 // exists to catch, so a test below reads the constructors back out of model.go
 // and fails when one is missing from this map.
 var modelConstructors = map[string]bool{
-	"Groups": true, "GroupActions": true, "GroupUsers": true, "Versions": true,
+	"Groups": true, "GroupActions": true, "GroupUsers": true,
+	"UserActions": true, "Versions": true,
 }
 
 // firstModelReach is where a method first constructs a configured Model or

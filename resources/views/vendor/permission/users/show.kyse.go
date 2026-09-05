@@ -51,6 +51,9 @@ type ShowData = permission.MemberPageData
 					<li class="flex flex-wrap items-center justify-between gap-3 border-b py-2">
 						<span class="font-mono text-xs">{{ string(grant.Action) }}</span>
 						<span class="flex flex-wrap items-center gap-1">
+							@if(grant.Direct)
+								{!! components.Badge(components.BadgeProps{Label: "direct", Variant: "outline"}) !!}
+							@endif
 							@foreach(grant.Groups as group)
 								<a href="{{ .Prefix }}/groups/{{ group.ID }}">
 									{!! components.Badge(components.BadgeProps{Label: group.Slug}) !!}
@@ -64,9 +67,57 @@ type ShowData = permission.MemberPageData
 			<div class="mt-3">
 				{!! components.Empty(components.EmptyProps{
 					Title:   "Nothing yet",
-					Message: "No group this person belongs to carries a permission.",
+					Message: "No group this person belongs to carries a permission, and nothing was given to them directly.",
 				}) !!}
 			</div>
 		@endif
+	</section>
+
+	{{-- What this person carries in their own right, on top of whatever their
+	     groups confer. It edits one table, so a box is ticked only for a direct
+	     grant: a box that came back ticked because a group granted the action
+	     would be a box somebody unticks expecting the permission to go away. --}}
+	<section class="mt-12 border-t pt-8">
+		<h2 class="text-lg font-semibold tracking-tight">Direct permissions</h2>
+		<p class="text-muted-foreground mt-1 text-sm">
+			Given to this person and to nobody else. What their groups carry is above, and is not ticked here.
+		</p>
+
+		<form id="direct-form" class="mt-6"
+		      hx-post="{{ .Prefix }}/users/{{ .Effective.UserID }}/summary"
+		      hx-target="#direct-summary"
+		      hx-swap="innerHTML">
+			@csrf
+			<input type="hidden" name="kind" value="actions">
+
+			<div class="grid gap-8">
+				@foreach(.Sections as section)
+					<fieldset>
+						<legend class="text-sm font-semibold tracking-tight">{{ section.Domain }}</legend>
+						<div class="mt-3 grid gap-2 sm:grid-cols-2">
+							@foreach(section.Choices as choice)
+								{!! components.Checkbox(components.CheckboxProps{
+									Name:    "value",
+									ID:      "direct-" + string(choice.Action),
+									Label:   string(choice.Action),
+									Value:   string(choice.Action),
+									Checked: choice.Held,
+								}) !!}
+							@endforeach
+						</div>
+					</fieldset>
+				@endforeach
+			</div>
+
+			<div class="mt-6 flex items-center gap-3">
+				{!! components.Button(components.ButtonProps{
+					Label:   "Review changes",
+					Type:    "submit",
+					Variant: "outline",
+				}) !!}
+				<span class="text-muted-foreground text-xs">Nothing is written until the summary is approved.</span>
+			</div>
+		</form>
+		<div id="direct-summary" class="mt-6"></div>
 	</section>
 @endsection

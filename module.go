@@ -170,6 +170,8 @@ func routePatterns(prefix string) []routePattern {
 		{stdhttp.MethodGet, prefix + "/catalogue"},
 		{stdhttp.MethodGet, prefix + "/matrix"},
 		{stdhttp.MethodGet, prefix + "/users/{user}"},
+		{stdhttp.MethodPost, prefix + "/users/{user}/summary"},
+		{stdhttp.MethodPut, prefix + "/users/{user}/actions"},
 	}
 }
 
@@ -214,6 +216,10 @@ func (m *Module) Routes(r *fhttp.Router) {
 		Name("permission.matrix").Can(PermissionList)
 	guarded.Action(stdhttp.MethodGet, m.cfg.Prefix+"/users/{user}", m.member).
 		Name("permission.member").Can(PermissionView)
+	guarded.Action(stdhttp.MethodPost, m.cfg.Prefix+"/users/{user}/summary", m.memberSummary).
+		Name("permission.member.summary").Can(PermissionView)
+	guarded.Action(stdhttp.MethodPut, m.cfg.Prefix+"/users/{user}/actions", m.grantDirect).
+		Name("permission.member.grant").Can(PermissionGrantDirect)
 }
 
 // PublishCommand is what an application runs to take ownership of the views
@@ -362,9 +368,18 @@ type MatrixPageData struct {
 // It is a fragment: it extends no layout, because it is swapped into a page
 // that already has one.
 type SummaryPageData struct {
-	// Prefix is where the confirmed write is sent.
+	// Prefix is where this module answers.
 	Prefix string
-	Group  GroupRef
+	// Target is the address the confirmed write is sent to, composed by the
+	// handler that drew the summary.
+	//
+	// It is here rather than assembled in the markup because two screens are
+	// summarised by one fragment, and an address built from a branch inside the
+	// template is an address that is wrong for whichever branch nobody tested.
+	Target string
+	// Group is the group the change is about, empty when the change is about
+	// one person's own grants.
+	Group GroupRef
 	// Kind is "actions" or "members", which is what decides where the
 	// confirmation goes and what the counts are called.
 	Kind string
@@ -382,6 +397,13 @@ type MemberPageData struct {
 
 	Prefix    string
 	Effective Effective
+	// Sections are every action of the catalogue, by domain, each saying
+	// whether this person carries it in their own right.
+	//
+	// What a group confers is not ticked here. The box edits one table, and a
+	// box that came back ticked because a group granted the action would be a
+	// box somebody unticks expecting the permission to go away.
+	Sections []ActionSection
 }
 
 // Handlers are thin on purpose: read the input, ask the service, answer. No
@@ -447,26 +469,13 @@ func (m *Module) show(ctx *fhttp.Context) error {
 		return m.answer(ctx, err)
 	}
 
-	carries := make(map[security.Action]bool, len(held))
-	for _, action := range held {
-		carries[action] = true
-	}
-	sections := make([]ActionSection, 0)
-	for _, domain := range m.svc.Catalogue().Domains() {
-		section := ActionSection{Domain: domain.Name}
-		for _, action := range domain.Actions {
-			section.Choices = append(section.Choices, ActionChoice{Action: action, Held: carries[action]})
-		}
-		sections = append(sections, section)
-	}
-
 	return ctx.View(ViewGroupsShow, GroupPageData{
 		Page:        m.page(ctx, record.Name),
 		Prefix:      m.cfg.Prefix,
 		Group:       refOf(record),
 		System:      record.IsSystem,
 		Description: record.Description,
-		Sections:    sections,
+		Sections:    m.sections(held),
 		Members:     members,
 	})
 }
@@ -523,6 +532,7 @@ func (m *Module) summary(ctx *fhttp.Context) error {
 
 	return ctx.Fragment(stdhttp.StatusOK, ViewSummary, SummaryPageData{
 		Prefix: m.cfg.Prefix,
+		Target: m.cfg.Prefix + "/groups/" + record.ID + "/" + kind,
 		Group:  refOf(record),
 		Kind:   kind,
 		Change: change,
@@ -590,15 +600,83 @@ func (m *Module) matrix(ctx *fhttp.Context) error {
 
 // member answers one person's effective permissions and where each comes from.
 func (m *Module) member(ctx *fhttp.Context) error {
-	effective, err := m.svc.EffectiveFor(ctx.Ctx(), m.subject(ctx.Request), ctx.Param("user"))
+	actor := m.subject(ctx.Request)
+	userID := ctx.Param("user")
+
+	effective, err := m.svc.EffectiveFor(ctx.Ctx(), actor, userID)
 	if err != nil {
 		return m.answer(ctx, err)
 	}
+	own, err := m.svc.DirectActionsOf(ctx.Ctx(), actor, userID)
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+
 	return ctx.View(ViewMember, MemberPageData{
 		Page:      m.page(ctx, "Effective permissions"),
 		Prefix:    m.cfg.Prefix,
 		Effective: effective,
+		Sections:  m.sections(own),
 	})
+}
+
+// memberSummary answers what a change to one person's own grants would do, and
+// writes nothing.
+func (m *Module) memberSummary(ctx *fhttp.Context) error {
+	userID := ctx.Param("user")
+	_, fields, err := m.submitted(ctx)
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+
+	change, err := m.svc.PreviewDirectActions(ctx.Ctx(), m.subject(ctx.Request), userID, actionsOf(fields))
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+	return ctx.Fragment(stdhttp.StatusOK, ViewSummary, SummaryPageData{
+		Prefix: m.cfg.Prefix,
+		Target: m.cfg.Prefix + "/users/" + userID + "/actions",
+		Kind:   kindActions,
+		Change: change,
+		Fields: fields,
+	})
+}
+
+// grantDirect makes one person carry exactly the actions that were submitted,
+// in their own right.
+func (m *Module) grantDirect(ctx *fhttp.Context) error {
+	_, fields, err := m.submitted(ctx)
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+	userID := ctx.Param("user")
+	if _, err := m.svc.SetDirectActions(ctx.Ctx(), m.subject(ctx.Request), userID, actionsOf(fields)); err != nil {
+		return m.answer(ctx, err)
+	}
+	return ctx.Redirect(m.cfg.Prefix + "/users/" + userID)
+}
+
+// sections is the whole catalogue by domain, each action saying whether it is
+// in the set given.
+//
+// It draws two screens: what a group carries, and what one person carries in
+// their own right. They are the same question about different rows, and one
+// builder is what keeps the second screen from quietly listing a different set
+// of permissions than the first.
+func (m *Module) sections(held []security.Action) []ActionSection {
+	carries := make(map[security.Action]bool, len(held))
+	for _, action := range held {
+		carries[action] = true
+	}
+	sections := make([]ActionSection, 0)
+	for _, domain := range m.svc.Catalogue().Domains() {
+		section := ActionSection{Domain: domain.Name}
+		for _, action := range domain.Actions {
+			section.Choices = append(section.Choices, ActionChoice{Action: action, Held: carries[action]})
+		}
+		sections = append(sections, section)
+	}
+	return sections
 }
 
 // The two kinds of bulk write a screen submits.
@@ -736,13 +814,16 @@ func (m *Module) answer(ctx *fhttp.Context, err error) error {
 // They are returned in the order their names sort in, which is the order they
 // apply in: the name carries the order, and nothing else decides it.
 func (m *Module) Migrations() []foundation.Migration {
-	return []foundation.Migration{createPermissionTables{}}
+	return []foundation.Migration{createPermissionTables{}, createPermissionUserActions{}}
 }
 
 // The migration is reversible, and the assertion is here rather than discovered
 // at rollback: the migrator tests for Down with a type assertion, so a Down with
 // the wrong signature would leave a rollback that silently does nothing.
-var _ migrations.ReversibleMigration = createPermissionTables{}
+var (
+	_ migrations.ReversibleMigration = createPermissionTables{}
+	_ migrations.ReversibleMigration = createPermissionUserActions{}
+)
 
 // createPermissionTables is the schema this module owns.
 //
@@ -833,4 +914,42 @@ func (createPermissionTables) Down(ctx context.Context, conn migrations.Connecti
 		}
 	}
 	return nil
+}
+
+// createPermissionUserActions is the table for what one person carries in their
+// own right.
+//
+// It is a second migration rather than a column added to the first, because the
+// first has already been applied somewhere. A name that has run means something
+// there, and editing what it means leaves the change missing on every
+// installation that had it, with nothing to say so.
+type createPermissionUserActions struct{ migrations.BaseMigration }
+
+// GetName is the migration's identity, and it carries the order.
+func (createPermissionUserActions) GetName() string {
+	return "20260905_0002_create_permission_user_actions"
+}
+
+// Up creates the table, the uniqueness that keeps it consistent, and the index
+// its one hot read scans.
+func (createPermissionUserActions) Up(ctx context.Context, conn migrations.Connection) error {
+	return conn.Schema().Create(ctx, UserActionsTable, func(table *schema.Blueprint) {
+		table.String("id").Primary()
+		table.String("tenant_id")
+		table.String("user_id")
+		table.String("action")
+
+		// A person carries an action once. Without this, a form submitted twice
+		// leaves two rows, and taking the permission away removes one of them.
+		table.Unique([]string{"tenant_id", "user_id", "action"}, "permission_user_actions_uq")
+		// The index the resolution reads by. It is on the path of every request
+		// that has a session, beside the membership index, so it is the second
+		// index that cannot be missing.
+		table.Index([]string{"tenant_id", "user_id"}, "permission_user_actions_user_idx")
+	})
+}
+
+// Down drops the table, which takes its indexes with it.
+func (createPermissionUserActions) Down(ctx context.Context, conn migrations.Connection) error {
+	return conn.Schema().DropIfExists(ctx, UserActionsTable)
 }

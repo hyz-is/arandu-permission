@@ -98,6 +98,8 @@ func everyRequest(prefix string) []struct{ method, target, body string } {
 		{http.MethodGet, prefix + "/catalogue", ""},
 		{http.MethodGet, prefix + "/matrix", ""},
 		{http.MethodGet, prefix + "/users/user-9", ""},
+		{http.MethodPost, prefix + "/users/user-9/summary", "value=invoice.delete"},
+		{http.MethodPut, prefix + "/users/user-9/actions", "value=invoice.delete"},
 	}
 }
 

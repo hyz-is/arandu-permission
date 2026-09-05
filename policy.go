@@ -37,6 +37,17 @@ const (
 	PermissionAssign security.Action = "permission.assign"
 	// PermissionUnassign is taking a person out of a group.
 	PermissionUnassign security.Action = "permission.unassign"
+	// PermissionGrantDirect is giving one person an action in their own right,
+	// outside every group.
+	//
+	// It is separate from PermissionGrant because the two are different amounts
+	// of power and an installation should be able to hand out one without the
+	// other. Editing a group is a change somebody else can read off a screen
+	// named after a role; giving one person one permission is a change nobody
+	// goes looking for.
+	PermissionGrantDirect security.Action = "permission.grant_direct"
+	// PermissionRevokeDirect is taking such an action back.
+	PermissionRevokeDirect security.Action = "permission.revoke_direct"
 
 	// PermissionResolve is reading the groups one is a member of.
 	//
@@ -59,8 +70,10 @@ func Actions() []security.Action {
 		PermissionCreate,
 		PermissionDelete,
 		PermissionGrant,
+		PermissionGrantDirect,
 		PermissionList,
 		PermissionRevoke,
+		PermissionRevokeDirect,
 		PermissionUnassign,
 		PermissionUpdate,
 		PermissionView,
@@ -169,5 +182,59 @@ func (MembershipPolicy) Can(_ context.Context, s security.Subject, a security.Ac
 	if a == PermissionAssign && record.UserID == s.ID {
 		return fmt.Errorf("%s does not put the subject into a group", a)
 	}
+	return nil
+}
+
+// UserActionPolicy decides who may give one person an action in their own right.
+//
+// It is the policy with the most to refuse, because a direct grant is the
+// shortest path from "may administer permissions" to "may do anything". A group
+// has to be created, named and looked at by somebody; a row here is one person
+// quietly holding one more permission.
+//
+// It holds the same two rules the group path holds, and it holds them harder:
+// nobody hands out what they do not hold, and nobody hands anything to
+// themselves. The second is not a nicety -- without it, whoever may administer
+// permissions may write themselves every action in the catalogue in one request,
+// and every other check in this package passes while it happens.
+type UserActionPolicy struct{}
+
+// Compile-time proof that the policy answers about this entity and no other.
+var _ security.Policy[UserAction] = UserActionPolicy{}
+
+// Can decides whether the subject may give this action to this person, take it
+// back, or read what they carry.
+func (UserActionPolicy) Can(_ context.Context, s security.Subject, a security.Action, record UserAction) error {
+	if record.TenantID != "" && record.TenantID != s.Tenant {
+		return fmt.Errorf("the grant belongs to another tenant")
+	}
+
+	// Reading one's own direct grants is decided by identity, for the reason
+	// reading one's own memberships is: it is half of what fills in the actions
+	// every other policy reads, so a rule that depended on those actions could
+	// never be satisfied the first time.
+	if a == PermissionResolve {
+		if record.UserID != "" && record.UserID == s.ID {
+			return nil
+		}
+		return fmt.Errorf("%s answers about the subject asking and nobody else", a)
+	}
+
+	if !s.HasRole(string(a)) {
+		return fmt.Errorf("no group of this subject carries %s", a)
+	}
+
+	if a == PermissionGrantDirect {
+		if record.UserID == s.ID {
+			return fmt.Errorf("%s does not give the subject a permission", a)
+		}
+		if !s.HasRole(record.Action) {
+			return fmt.Errorf("%s cannot be granted by a subject that does not hold it", record.Action)
+		}
+	}
+
+	// Taking a direct grant back is bounded by neither rule. Removing a
+	// permission is never an escalation, and requiring the permission in order
+	// to remove it would leave a mistake nobody can undo.
 	return nil
 }

@@ -55,7 +55,7 @@ type SummaryData = permission.SummaryPageData
 		{{-- The confirmation carries the same values that produced the summary,
 		     so approving it sends the request that was described rather than
 		     whatever the form holds by then. --}}
-		<form class="mt-4" hx-put="{{ .Prefix }}/groups/{{ .Group.ID }}/{{ .Kind }}">
+		<form class="mt-4" hx-put="{{ .Target }}">
 			@csrf
 			<input type="hidden" name="kind" value="{{ .Kind }}">
 			@foreach(.Fields as field)

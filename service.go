@@ -54,6 +54,11 @@ type PermissionService struct {
 	// about three would take an argument it could not type.
 	actions ActionPolicy
 	members MembershipPolicy
+	// direct answers about an action one person carries in their own right. It
+	// is a fourth value for the reason there are three: each policy answers
+	// about its own entity, and this one sees who the row is about, which is
+	// what lets it refuse a subject writing itself a permission.
+	direct UserActionPolicy
 	// catalogue is the closed set of actions a group may carry. A write that
 	// named anything else is refused before it is authorized: a permission that
 	// no policy reads is not a permission, and storing it would put a promise
@@ -597,6 +602,126 @@ func (s *PermissionService) SetMembers(ctx context.Context, actor security.Subje
 	return change, nil
 }
 
+// DirectActionsOf returns the actions one person carries in their own right,
+// sorted.
+//
+// They are what the reference calls extra permissions: what somebody holds on
+// top of whatever their groups confer. A screen draws them beside the groups
+// rather than mixed into them, because the two are undone in different places.
+func (s *PermissionService) DirectActionsOf(ctx context.Context, actor security.Subject, userID string) ([]security.Action, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionView, Group{})
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(userID) == "" {
+		return nil, fmt.Errorf("%w: it is empty", ErrInvalidMember)
+	}
+
+	held, err := s.directHeld(ctx, g, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]security.Action, 0, len(held))
+	for _, action := range held {
+		out = append(out, security.Action(action))
+	}
+	return out, nil
+}
+
+// PreviewDirectActions reports what SetDirectActions would change, and writes
+// nothing.
+func (s *PermissionService) PreviewDirectActions(ctx context.Context, actor security.Subject, userID string, wanted []security.Action) (Change, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionView, Group{})
+	if err != nil {
+		return Change{}, err
+	}
+	_, err = s.directHeld(ctx, g, userID)
+	if err != nil {
+		return Change{}, err
+	}
+	return s.plannedDirect(ctx, g, userID, wanted)
+}
+
+// SetDirectActions makes one person carry exactly these actions in their own
+// right.
+//
+// It is the only way such a row is written, for the reason SetActions is the
+// only way a group carries one: a per-action call beside it would need the same
+// authorization, the same catalogue check and the same version bump written
+// twice.
+//
+// Every added action is authorized on its own. That is where the two rules that
+// matter are asked -- nobody hands out what they do not hold, and nobody hands
+// anything to themselves -- and asking them once per action rather than once per
+// request is what makes a request naming twenty permissions no weaker than
+// twenty requests naming one.
+func (s *PermissionService) SetDirectActions(ctx context.Context, actor security.Subject, userID string, wanted []security.Action) (Change, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionGrantDirect, Group{})
+	if err != nil {
+		return Change{}, err
+	}
+
+	change, err := s.plannedDirect(ctx, g, userID, wanted)
+	if err != nil {
+		return Change{}, err
+	}
+	if change.Empty() {
+		return change, nil
+	}
+
+	tenant := data.Tenant(g)
+	for _, action := range change.Added {
+		row := UserAction{TenantID: tenant, UserID: userID, Action: action}
+		if _, err := security.Authorize(ctx, s.direct, actor, PermissionGrantDirect, row); err != nil {
+			return Change{}, err
+		}
+	}
+	for _, action := range change.Removed {
+		row := UserAction{TenantID: tenant, UserID: userID, Action: action}
+		if _, err := security.Authorize(ctx, s.direct, actor, PermissionRevokeDirect, row); err != nil {
+			return Change{}, err
+		}
+	}
+
+	err = data.Transaction(ctx, s.db, func(ctx context.Context) error {
+		for _, action := range change.Added {
+			id, err := data.NewID()
+			if err != nil {
+				return err
+			}
+			instance, err := UserActions(s.db).NewInstance(nil, false)
+			if err != nil {
+				return err
+			}
+			row := instance.Entity
+			row.ID = id
+			row.TenantID = data.Tenant(g)
+			row.UserID = userID
+			row.Action = action
+			if _, err := row.Save(ctx, g); err != nil {
+				return err
+			}
+		}
+		if len(change.Removed) > 0 {
+			removed := make([]any, 0, len(change.Removed))
+			for _, action := range change.Removed {
+				removed = append(removed, action)
+			}
+			if _, err := UserActions(s.db).NewQuery().
+				Where("user_id", "=", userID).
+				WhereIn("action", removed).
+				Delete(ctx, g); err != nil {
+				return err
+			}
+		}
+		return s.bump(ctx, g)
+	})
+	if err != nil {
+		return Change{}, err
+	}
+	return change, nil
+}
+
 // EffectiveFor returns what one person may do, and which group gives them each
 // of it.
 //
@@ -825,7 +950,7 @@ func (s *PermissionService) ViewMatrix(ctx context.Context, actor security.Subje
 // ask.
 func (s *PermissionService) plannedActions(ctx context.Context, g security.Grant, actor security.Subject, groupID string, wanted []security.Action) (*Group, Change, error) {
 	if len(wanted) > MaxBulkSize {
-		return nil, Change{}, fmt.Errorf("permission: %d actions were named and the limit is %d", len(wanted), MaxBulkSize)
+		return nil, Change{}, fmt.Errorf("%w: %d actions were named and the limit is %d", ErrTooMany, len(wanted), MaxBulkSize)
 	}
 	asked := make([]string, 0, len(wanted))
 	for _, action := range wanted {
@@ -856,11 +981,11 @@ func (s *PermissionService) plannedActions(ctx context.Context, g security.Grant
 // plannedMembers is the membership half of plannedActions.
 func (s *PermissionService) plannedMembers(ctx context.Context, g security.Grant, actor security.Subject, groupID string, wanted []string) (*Group, Change, error) {
 	if len(wanted) > MaxBulkSize {
-		return nil, Change{}, fmt.Errorf("permission: %d members were named and the limit is %d", len(wanted), MaxBulkSize)
+		return nil, Change{}, fmt.Errorf("%w: %d members were named and the limit is %d", ErrTooMany, len(wanted), MaxBulkSize)
 	}
 	for _, userID := range wanted {
 		if strings.TrimSpace(userID) == "" {
-			return nil, Change{}, fmt.Errorf("permission: a member was named as an empty identifier")
+			return nil, Change{}, fmt.Errorf("%w: it is empty", ErrInvalidMember)
 		}
 	}
 
@@ -880,6 +1005,49 @@ func (s *PermissionService) plannedMembers(ctx context.Context, g security.Grant
 		return nil, Change{}, err
 	}
 	return record, difference(current, wanted), nil
+}
+
+// plannedDirect works out what the wanted set would change about one person's
+// own grants, without writing anything.
+//
+// The catalogue check happens here, before any authorization, for the reason it
+// happens first on the group path: an action nobody declared is not a permission
+// that was refused, it is a permission that does not exist.
+func (s *PermissionService) plannedDirect(ctx context.Context, g security.Grant, userID string, wanted []security.Action) (Change, error) {
+	if strings.TrimSpace(userID) == "" {
+		return Change{}, fmt.Errorf("%w: it is empty", ErrInvalidMember)
+	}
+	if len(wanted) > MaxBulkSize {
+		return Change{}, fmt.Errorf("%w: %d actions were named and the limit is %d", ErrTooMany, len(wanted), MaxBulkSize)
+	}
+	asked := make([]string, 0, len(wanted))
+	for _, action := range wanted {
+		if !s.catalogue.Has(action) {
+			return Change{}, fmt.Errorf("%w: %s", ErrUnknownAction, action)
+		}
+		asked = append(asked, string(action))
+	}
+
+	current, err := s.directHeld(ctx, g, userID)
+	if err != nil {
+		return Change{}, err
+	}
+	return difference(current, asked), nil
+}
+
+// directHeld is the actions one person carries in their own right, sorted.
+func (s *PermissionService) directHeld(ctx context.Context, g security.Grant, userID string) ([]string, error) {
+	rows, err := UserActions(s.db).NewQuery().Where("user_id", "=", userID).OrderBy("action").Get(ctx, g)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row != nil {
+			out = append(out, row.Action)
+		}
+	}
+	return out, nil
 }
 
 // held is the actions one group carries, sorted.
@@ -944,12 +1112,17 @@ func (s *PermissionService) systemGroups(ctx context.Context, g security.Grant) 
 }
 
 // effective assembles what one person may do out of their memberships, the
-// actions those groups carry, and the groups themselves.
+// actions those groups carry, the actions they carry in their own right, and
+// the groups themselves.
 //
-// The catalogue filters the result. A row naming an action that no longer
-// exists in the code is left where it is and not answered with: deleting rows
-// on a read would make a deployment that dropped an action destroy data, and
-// answering with it would put a permission into a decision that nothing reads.
+// The catalogue filters the result. A row naming an action that no longer exists
+// in the code is left where it is and not answered with: deleting rows on a read
+// would make a deployment that dropped an action destroy data, and answering
+// with it would put a permission into a decision that nothing reads.
+//
+// A person in no group is still asked about. Their memberships are empty and
+// their own grants are not, and a read that stopped at the first empty answer
+// would report somebody carrying nothing while a row said otherwise.
 func (s *PermissionService) effective(ctx context.Context, g security.Grant, userID string) (Effective, error) {
 	out := Effective{UserID: userID}
 	if userID == "" {
@@ -966,37 +1139,50 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 			ids = append(ids, row.GroupID)
 		}
 	}
-	if len(ids) == 0 {
-		return out, nil
-	}
 
-	groups, err := Groups(s.db).NewQuery().WhereIn("id", ids).OrderBy("slug").Get(ctx, g)
-	if err != nil {
-		return Effective{}, err
-	}
-	refs := make(map[string]GroupRef, len(groups))
-	for _, row := range groups {
-		if row != nil {
-			refs[row.ID] = refOf(row)
-			out.Groups = append(out.Groups, refOf(row))
+	refs := map[string]GroupRef{}
+	if len(ids) > 0 {
+		groups, err := Groups(s.db).NewQuery().WhereIn("id", ids).OrderBy("slug").Get(ctx, g)
+		if err != nil {
+			return Effective{}, err
 		}
-	}
-	if len(refs) == 0 {
-		return out, nil
-	}
-
-	links, err := GroupActions(s.db).NewQuery().WhereIn("group_id", ids).OrderBy("action").Get(ctx, g)
-	if err != nil {
-		return Effective{}, err
+		for _, row := range groups {
+			if row != nil {
+				refs[row.ID] = refOf(row)
+				out.Groups = append(out.Groups, refOf(row))
+			}
+		}
 	}
 
 	origin := map[string][]GroupRef{}
-	for _, link := range links {
-		if link == nil || !s.catalogue.Has(security.Action(link.Action)) {
+	if len(refs) > 0 {
+		links, err := GroupActions(s.db).NewQuery().WhereIn("group_id", ids).OrderBy("action").Get(ctx, g)
+		if err != nil {
+			return Effective{}, err
+		}
+		for _, link := range links {
+			if link == nil || !s.catalogue.Has(security.Action(link.Action)) {
+				continue
+			}
+			if ref, known := refs[link.GroupID]; known {
+				origin[link.Action] = append(origin[link.Action], ref)
+			}
+		}
+	}
+
+	own, err := s.directHeld(ctx, g, userID)
+	if err != nil {
+		return Effective{}, err
+	}
+	direct := make(map[string]bool, len(own))
+	for _, action := range own {
+		if !s.catalogue.Has(security.Action(action)) {
 			continue
 		}
-		if ref, known := refs[link.GroupID]; known {
-			origin[link.Action] = append(origin[link.Action], ref)
+		direct[action] = true
+		out.Direct = append(out.Direct, security.Action(action))
+		if _, carried := origin[action]; !carried {
+			origin[action] = nil
 		}
 	}
 
@@ -1008,7 +1194,11 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 	for _, action := range actions {
 		carriers := origin[action]
 		sortRefs(carriers)
-		out.Grants = append(out.Grants, EffectiveGrant{Action: security.Action(action), Groups: carriers})
+		out.Grants = append(out.Grants, EffectiveGrant{
+			Action: security.Action(action),
+			Groups: carriers,
+			Direct: direct[action],
+		})
 	}
 	return out, nil
 }
