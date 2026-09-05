@@ -775,11 +775,16 @@ func (m *Module) page(ctx *fhttp.Context, title string) hview.Page {
 // a time; the reason is in the log, where the person operating the system reads
 // it and the person probing it does not.
 //
-// The two refusals that are not authorization are answered as themselves. An
-// action outside the catalogue is not a permission somebody lacks, it is a
-// permission that does not exist, and answering it as 403 sends them looking
-// for who to ask. Emptying a system group is a state that is refused, not a
-// subject who was.
+// The refusals that are not authorization are answered as themselves. An action
+// outside the catalogue is not a permission somebody lacks, it is a permission
+// that does not exist, and answering it as 403 sends them looking for who to
+// ask. Emptying a system group is a state that is refused, not a subject who
+// was.
+//
+// Naming each one is what keeps a client-caused refusal out of the 500s. A
+// request that names one member too many, or an identifier that cannot be one,
+// used to fall through to a server error -- and a person told the server failed
+// sends the same request again.
 func (m *Module) answer(ctx *fhttp.Context, err error) error {
 	switch {
 	case errors.Is(err, security.ErrForbidden):
@@ -796,6 +801,18 @@ func (m *Module) answer(ctx *fhttp.Context, err error) error {
 		return nil
 	case errors.Is(err, ErrSlugTaken):
 		fhttp.Refuse(ctx.Response, ctx.Request, stdhttp.StatusConflict, "a group with this slug already exists")
+		return nil
+	case errors.Is(err, ErrNoMatch):
+		fhttp.Refuse(ctx.Response, ctx.Request, stdhttp.StatusUnprocessableEntity, "the selector names no permission this application declares")
+		return nil
+	case errors.Is(err, ErrTooMany):
+		fhttp.Refuse(ctx.Response, ctx.Request, stdhttp.StatusUnprocessableEntity, "the request names more than one write may")
+		return nil
+	case errors.Is(err, ErrInvalidMember):
+		fhttp.Refuse(ctx.Response, ctx.Request, stdhttp.StatusUnprocessableEntity, "somebody was named by an identifier that cannot be one")
+		return nil
+	case errors.Is(err, ErrBootstrapped):
+		fhttp.Refuse(ctx.Response, ctx.Request, stdhttp.StatusConflict, "this tenant already has a group")
 		return nil
 	}
 

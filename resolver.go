@@ -157,3 +157,62 @@ func (m *Module) Roles() fhttp.Middleware {
 		})
 	}
 }
+
+// Require returns middleware that refuses a request unless the acting subject
+// carries one of these actions.
+//
+// It refuses and it never admits. Nothing it lets through has been authorized by
+// it: the handler still asks the service, the service still asks the policy, and
+// the policy is still what decides. What it buys is that a request which was
+// never going to be allowed is answered before the handler runs -- before a row
+// is read, before a page is composed, and with one rule written at the route
+// instead of the same rule repeated in every handler behind it.
+//
+// The actions are alternatives. A subject carrying any one of them passes, which
+// is what a screen reachable by two different roles needs; a route that wants
+// two at once is two calls, and reads as the conjunction it is.
+//
+// It has to run after Roles, which is what puts the actions on the subject.
+// Before it, every subject carries nothing and this refuses everybody -- which
+// is the direction a missing step has to fail in, and still the wrong answer.
+//
+// There is deliberately no counterpart taking group names. A group is not a
+// permission: it is where a permission came from, it is renamed by whoever
+// administers it, and it is never checked against the catalogue. A rule written
+// against one would be a decision nothing in this package validated, taken on a
+// string somebody can edit on a screen. What a route wants when it reaches for a
+// role name is the permission that role carries, and that is what this takes.
+func (m *Module) Require(actions ...security.Action) fhttp.Middleware {
+	// The set is built once, at wiring time, rather than per request. It also
+	// makes a Require with no action refuse everything, which is what a route
+	// that named nothing asked for.
+	wanted := make(map[string]bool, len(actions))
+	for _, action := range actions {
+		wanted[string(action)] = true
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			subject, carried := auth.SubjectFrom(r.Context())
+			if !carried || subject.ID == "" {
+				// A visitor with no session is refused as unauthenticated
+				// rather than as forbidden. The two are different instructions:
+				// one says sign in, the other says ask somebody for access, and
+				// answering the first as the second sends people to the wrong
+				// place.
+				fhttp.Refuse(w, r, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			for role := range wanted {
+				if subject.HasRole(role) {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			// No detail. Which permission was wanted is a fact about what
+			// exists, and answering with it maps the application one request at
+			// a time.
+			fhttp.Refuse(w, r, http.StatusForbidden, "forbidden")
+		})
+	}
+}
