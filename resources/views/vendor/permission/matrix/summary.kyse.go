@@ -18,15 +18,15 @@ type SummaryData = permission.SummaryPageData
      the navigation inside the element it was swapped into. --}}
 
 <div class="rounded-md border p-4">
-	<h3 class="text-sm font-semibold tracking-tight">Before this is written</h3>
+	<h3 class="text-sm font-semibold tracking-tight">{{ .Labels.T("summary.title") }}</h3>
 
 	@if(.Change.Empty())
-		<p class="text-muted-foreground mt-2 text-sm">Nothing would change.</p>
+		<p class="text-muted-foreground mt-2 text-sm">{{ .Labels.T("summary.nothing") }}</p>
 	@else
 		<dl class="mt-3 grid gap-3 text-sm">
 			@if(len(.Change.Added) > 0)
 				<div>
-					<dt class="font-medium">Added</dt>
+					<dt class="font-medium">{{ .Labels.T("summary.added") }}</dt>
 					<dd class="mt-1 flex flex-wrap gap-1">
 						@foreach(.Change.Added as value)
 							{!! components.Badge(components.BadgeProps{Label: value}) !!}
@@ -36,7 +36,7 @@ type SummaryData = permission.SummaryPageData
 			@endif
 			@if(len(.Change.Removed) > 0)
 				<div>
-					<dt class="font-medium">Removed</dt>
+					<dt class="font-medium">{{ .Labels.T("summary.removed") }}</dt>
 					<dd class="mt-1 flex flex-wrap gap-1">
 						@foreach(.Change.Removed as value)
 							{!! components.Badge(components.BadgeProps{Label: value, Variant: "destructive"}) !!}
@@ -46,8 +46,8 @@ type SummaryData = permission.SummaryPageData
 			@endif
 			@if(len(.Change.Unchanged) > 0)
 				<div>
-					<dt class="text-muted-foreground font-medium">Unchanged</dt>
-					<dd class="text-muted-foreground mt-1 text-xs">{{ len(.Change.Unchanged) }} kept as they are</dd>
+					<dt class="text-muted-foreground font-medium">{{ .Labels.T("summary.unchanged") }}</dt>
+					<dd class="text-muted-foreground mt-1 text-xs">{{ len(.Change.Unchanged) }} {{ .Labels.T("summary.kept") }}</dd>
 				</div>
 			@endif
 		</dl>
@@ -61,7 +61,7 @@ type SummaryData = permission.SummaryPageData
 			@foreach(.Fields as field)
 				<input type="hidden" name="value" value="{{ field }}">
 			@endforeach
-			{!! components.Button(components.ButtonProps{Label: "Apply this change", Type: "submit"}) !!}
+			{!! components.Button(components.ButtonProps{Label: .Labels.T("control.apply"), Type: "submit"}) !!}
 		</form>
 	@endif
 </div>

@@ -1,0 +1,92 @@
+{
+    "noun": {
+        "group_one": "Grupo",
+        "group_many": "Grupos",
+        "permission_one": "Permissão",
+        "permission_many": "Permissões",
+        "member_one": "Membro",
+        "member_many": "Membros",
+        "person_one": "Pessoa",
+        "person_many": "Pessoas"
+    },
+    "field": {
+        "name": "Nome",
+        "slug": "Identificador",
+        "description": "Descrição",
+        "search": "Buscar",
+        "identifier": "Identificador"
+    },
+    "control": {
+        "back": "Voltar",
+        "save": "Salvar",
+        "create_group": "Criar grupo",
+        "delete_group": "Excluir este grupo",
+        "review": "Revisar alterações",
+        "apply": "Aplicar esta alteração",
+        "next_page": "Próxima página",
+        "search_placeholder": "identificador ou nome"
+    },
+    "groups": {
+        "title": "Grupos",
+        "lead": "Um grupo carrega permissões. Uma pessoa carrega o que os grupos dela carregam.",
+        "new": "Novo grupo",
+        "new_lead": "O identificador é o nome estável e não muda depois.",
+        "empty_title": "Nenhum grupo aqui",
+        "empty_message": "Nada corresponde à busca, ou nada foi criado ainda."
+    },
+    "group": {
+        "permissions_lead": "Todas as permissões que esta aplicação declara. O que não está marcado não é carregado.",
+        "members_lead": "Um identificador por linha. Remover todo mundo de um grupo de sistema é recusado.",
+        "add_member": "Adicionar alguém",
+        "delete_lead": "O grupo, o que ele carrega e quem está nele, tudo de uma vez.",
+        "delete_confirm": "Excluir este grupo e todas as participações nele?",
+        "system": "sistema",
+        "system_title": "Este grupo sustenta a instalação",
+        "system_message": "Ele não pode ser excluído, suas permissões não podem ser retiradas e ele não pode ficar sem nenhum membro."
+    },
+    "catalogue": {
+        "title": "Permissões",
+        "lead": "Todas as permissões que esta aplicação declara, e os grupos que as carregam.",
+        "nobody": "Nenhum grupo carrega esta"
+    },
+    "matrix": {
+        "title": "Grupos e permissões",
+        "lead": "Todos os grupos contra todas as permissões."
+    },
+    "member": {
+        "title": "Permissões efetivas",
+        "groups": "Grupos",
+        "none": "Não está em nenhum grupo, e portanto não carrega nada.",
+        "origin": "Permissões, e de onde vem cada uma",
+        "empty_title": "Nada ainda",
+        "empty_message": "Nenhum grupo desta pessoa carrega permissão, e nada foi dado a ela diretamente.",
+        "direct": "direta",
+        "direct_title": "Permissões diretas",
+        "direct_lead": "Dadas a esta pessoa e a mais ninguém. O que os grupos dela carregam está acima, e não é marcado aqui."
+    },
+    "summary": {
+        "title": "Antes de gravar",
+        "nothing": "Nada mudaria.",
+        "added": "Adicionadas",
+        "removed": "Removidas",
+        "unchanged": "Inalteradas",
+        "kept": "mantidas como estão",
+        "warning": "Nada é gravado até o resumo ser aprovado."
+    },
+    "domain": {
+        "permission": "Permissões"
+    },
+    "action": {
+        "permission.view": "Ler um grupo",
+        "permission.list": "Listar os grupos e o catálogo",
+        "permission.create": "Adicionar um grupo",
+        "permission.update": "Renomear um grupo",
+        "permission.delete": "Remover um grupo",
+        "permission.grant": "Anexar uma permissão a um grupo",
+        "permission.revoke": "Retirar uma permissão de um grupo",
+        "permission.assign": "Colocar alguém em um grupo",
+        "permission.unassign": "Tirar alguém de um grupo",
+        "permission.grant_direct": "Dar uma permissão diretamente a alguém",
+        "permission.revoke_direct": "Retirar uma permissão direta"
+    }
+}

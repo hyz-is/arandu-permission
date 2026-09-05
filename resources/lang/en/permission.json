@@ -1,0 +1,92 @@
+{
+    "noun": {
+        "group_one": "Group",
+        "group_many": "Groups",
+        "permission_one": "Permission",
+        "permission_many": "Permissions",
+        "member_one": "Member",
+        "member_many": "Members",
+        "person_one": "Person",
+        "person_many": "People"
+    },
+    "field": {
+        "name": "Name",
+        "slug": "Slug",
+        "description": "Description",
+        "search": "Search",
+        "identifier": "Identifier"
+    },
+    "control": {
+        "back": "Back",
+        "save": "Save",
+        "create_group": "Create group",
+        "delete_group": "Delete this group",
+        "review": "Review changes",
+        "apply": "Apply this change",
+        "next_page": "Next page",
+        "search_placeholder": "slug or name"
+    },
+    "groups": {
+        "title": "Groups",
+        "lead": "A group carries permissions. A person carries what their groups carry.",
+        "new": "New group",
+        "new_lead": "The slug is the stable name and does not change afterwards.",
+        "empty_title": "No group here",
+        "empty_message": "Nothing matches, or nothing has been created yet."
+    },
+    "group": {
+        "permissions_lead": "Every permission this application declares. What is not ticked is not carried.",
+        "members_lead": "One identifier per line. Removing everybody from a system group is refused.",
+        "add_member": "Add somebody",
+        "delete_lead": "The group, what it carries and who is in it, all at once.",
+        "delete_confirm": "Delete this group and every membership on it?",
+        "system": "system",
+        "system_title": "This group holds the installation together",
+        "system_message": "It cannot be deleted, its permissions cannot be taken off it, and it cannot be left without a member."
+    },
+    "catalogue": {
+        "title": "Permissions",
+        "lead": "Every permission this application declares, and the groups that carry it.",
+        "nobody": "No group carries this"
+    },
+    "matrix": {
+        "title": "Groups and permissions",
+        "lead": "Every group against every permission."
+    },
+    "member": {
+        "title": "Effective permissions",
+        "groups": "Groups",
+        "none": "In no group, and therefore carrying nothing.",
+        "origin": "Permissions, and where each comes from",
+        "empty_title": "Nothing yet",
+        "empty_message": "No group this person belongs to carries a permission, and nothing was given to them directly.",
+        "direct": "direct",
+        "direct_title": "Direct permissions",
+        "direct_lead": "Given to this person and to nobody else. What their groups carry is above, and is not ticked here."
+    },
+    "summary": {
+        "title": "Before this is written",
+        "nothing": "Nothing would change.",
+        "added": "Added",
+        "removed": "Removed",
+        "unchanged": "Unchanged",
+        "kept": "kept as they are",
+        "warning": "Nothing is written until the summary is approved."
+    },
+    "domain": {
+        "permission": "Permissions"
+    },
+    "action": {
+        "permission.view": "Read one group",
+        "permission.list": "List the groups and the catalogue",
+        "permission.create": "Add a group",
+        "permission.update": "Rename a group",
+        "permission.delete": "Remove a group",
+        "permission.grant": "Attach a permission to a group",
+        "permission.revoke": "Detach a permission from a group",
+        "permission.assign": "Put somebody in a group",
+        "permission.unassign": "Take somebody out of a group",
+        "permission.grant_direct": "Give somebody a permission directly",
+        "permission.revoke_direct": "Take a direct permission back"
+    }
+}

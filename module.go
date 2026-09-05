@@ -51,6 +51,7 @@ import (
 	"github.com/arandu-io/hesape/auth"
 	"github.com/arandu-io/hesape/database/migrations"
 	"github.com/arandu-io/hesape/database/schema"
+	"github.com/arandu-io/hesape/translation"
 	hview "github.com/arandu-io/hesape/view"
 )
 
@@ -299,6 +300,9 @@ type GroupsPageData struct {
 	// Prefix is where this module answers, so the markup composes its own
 	// addresses instead of hard-coding one the configuration can change.
 	Prefix string
+	// Labels are the sentences this screen draws, resolved for the locale the
+	// request asked for.
+	Labels Labels
 	// Search is the term the listing was narrowed by, echoed back into the
 	// field so the box still says what is being looked at.
 	Search string
@@ -330,6 +334,7 @@ type GroupPageData struct {
 	hview.Page
 
 	Prefix string
+	Labels Labels
 	Group  GroupRef
 	// System says the group cannot be deleted and cannot have actions taken
 	// off it, so the screen draws those controls as unavailable rather than
@@ -350,6 +355,7 @@ type CataloguePageData struct {
 	hview.Page
 
 	Prefix  string
+	Labels  Labels
 	Domains []CatalogueDomain
 }
 
@@ -358,6 +364,7 @@ type MatrixPageData struct {
 	hview.Page
 
 	Prefix string
+	Labels Labels
 	Search string
 	Matrix MatrixView
 }
@@ -370,6 +377,8 @@ type MatrixPageData struct {
 type SummaryPageData struct {
 	// Prefix is where this module answers.
 	Prefix string
+	// Labels are the sentences this fragment draws.
+	Labels Labels
 	// Target is the address the confirmed write is sent to, composed by the
 	// handler that drew the summary.
 	//
@@ -396,6 +405,7 @@ type MemberPageData struct {
 	hview.Page
 
 	Prefix    string
+	Labels    Labels
 	Effective Effective
 	// Sections are every action of the catalogue, by domain, each saying
 	// whether this person carries it in their own right.
@@ -422,9 +432,11 @@ func (m *Module) index(ctx *fhttp.Context) error {
 	if err != nil {
 		return m.answer(ctx, err)
 	}
+	labels := m.Labels(m.locale(ctx.Request))
 	return ctx.View(ViewGroupsIndex, GroupsPageData{
-		Page:   m.page(ctx, "Groups"),
+		Page:   m.page(ctx, labels.T("groups.title")),
 		Prefix: m.cfg.Prefix,
+		Labels: labels,
 		Search: search,
 		Groups: page.Items,
 		Next:   page.Next,
@@ -469,9 +481,11 @@ func (m *Module) show(ctx *fhttp.Context) error {
 		return m.answer(ctx, err)
 	}
 
+	labels := m.Labels(m.locale(ctx.Request))
 	return ctx.View(ViewGroupsShow, GroupPageData{
 		Page:        m.page(ctx, record.Name),
 		Prefix:      m.cfg.Prefix,
+		Labels:      labels,
 		Group:       refOf(record),
 		System:      record.IsSystem,
 		Description: record.Description,
@@ -532,6 +546,7 @@ func (m *Module) summary(ctx *fhttp.Context) error {
 
 	return ctx.Fragment(stdhttp.StatusOK, ViewSummary, SummaryPageData{
 		Prefix: m.cfg.Prefix,
+		Labels: m.Labels(m.locale(ctx.Request)),
 		Target: m.cfg.Prefix + "/groups/" + record.ID + "/" + kind,
 		Group:  refOf(record),
 		Kind:   kind,
@@ -572,9 +587,11 @@ func (m *Module) catalogue(ctx *fhttp.Context) error {
 	if err != nil {
 		return m.answer(ctx, err)
 	}
+	labels := m.Labels(m.locale(ctx.Request))
 	return ctx.View(ViewCatalogue, CataloguePageData{
-		Page:    m.page(ctx, "Permissions"),
+		Page:    m.page(ctx, labels.T("catalogue.title")),
 		Prefix:  m.cfg.Prefix,
+		Labels:  labels,
 		Domains: view.Domains,
 	})
 }
@@ -590,9 +607,11 @@ func (m *Module) matrix(ctx *fhttp.Context) error {
 	if err != nil {
 		return m.answer(ctx, err)
 	}
+	labels := m.Labels(m.locale(ctx.Request))
 	return ctx.View(ViewMatrix, MatrixPageData{
-		Page:   m.page(ctx, "Groups and permissions"),
+		Page:   m.page(ctx, labels.T("matrix.title")),
 		Prefix: m.cfg.Prefix,
+		Labels: labels,
 		Search: search,
 		Matrix: grid,
 	})
@@ -612,9 +631,11 @@ func (m *Module) member(ctx *fhttp.Context) error {
 		return m.answer(ctx, err)
 	}
 
+	labels := m.Labels(m.locale(ctx.Request))
 	return ctx.View(ViewMember, MemberPageData{
-		Page:      m.page(ctx, "Effective permissions"),
+		Page:      m.page(ctx, labels.T("member.title")),
 		Prefix:    m.cfg.Prefix,
+		Labels:    labels,
 		Effective: effective,
 		Sections:  m.sections(own),
 	})
@@ -635,6 +656,7 @@ func (m *Module) memberSummary(ctx *fhttp.Context) error {
 	}
 	return ctx.Fragment(stdhttp.StatusOK, ViewSummary, SummaryPageData{
 		Prefix: m.cfg.Prefix,
+		Labels: m.Labels(m.locale(ctx.Request)),
 		Target: m.cfg.Prefix + "/users/" + userID + "/actions",
 		Kind:   kindActions,
 		Change: change,
@@ -747,6 +769,16 @@ func (m *Module) subject(r *stdhttp.Request) security.Subject {
 		return sub
 	}
 	return security.Guest(m.cfg.Tenant)
+}
+
+// locale is what this request asked to be answered in.
+//
+// It comes from the request's context, where the negotiation middleware left
+// it. An application that mounted none leaves it empty and the shipped locale is
+// what is drawn -- a panel in the wrong language is still a panel, and refusing
+// the request would be worse than answering it in English.
+func (m *Module) locale(r *stdhttp.Request) string {
+	return translation.Locale(r.Context())
 }
 
 // page is the chrome the application's layout draws around a screen.

@@ -23,14 +23,14 @@ type IndexData = permission.GroupsPageData
 @section('content')
 	<div class="flex items-start justify-between gap-4">
 		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">Groups</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("groups.title") }}</h1>
 			<p class="text-muted-foreground mt-1 text-sm">
-				A group carries permissions. A person carries what their groups carry.
+				{{ .Labels.T("groups.lead") }}
 			</p>
 		</div>
 		<nav class="flex items-center gap-2">
-			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/catalogue">Permissions</a>
-			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/matrix">Matrix</a>
+			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/catalogue">{{ .Labels.T("catalogue.title") }}</a>
+			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/matrix">{{ .Labels.T("matrix.title") }}</a>
 		</nav>
 	</div>
 
@@ -39,16 +39,16 @@ type IndexData = permission.GroupsPageData
 	     only exists in their tab. --}}
 	<form class="mt-8 flex items-end gap-2" method="get" action="{{ .Prefix }}/groups">
 		<div class="grow">
-			{!! components.Label(components.LabelProps{For: "q", Text: "Search"}) !!}
+			{!! components.Label(components.LabelProps{For: "q", Text: .Labels.T("field.search")}) !!}
 			{!! components.Input(components.InputProps{
 				Name:        "q",
 				ID:          "q",
 				Type:        "search",
 				Value:       .Search,
-				Placeholder: "slug or name",
+				Placeholder: .Labels.T("control.search_placeholder"),
 			}) !!}
 		</div>
-		{!! components.Button(components.ButtonProps{Label: "Search", Type: "submit", Variant: "outline"}) !!}
+		{!! components.Button(components.ButtonProps{Label: .Labels.T("field.search"), Type: "submit", Variant: "outline"}) !!}
 	</form>
 
 	@if(len(.Groups) > 0)
@@ -67,28 +67,28 @@ type IndexData = permission.GroupsPageData
 		@if(.Next != "")
 			<div class="mt-6 flex justify-end">
 				<a class="btn" data-variant="outline" data-size="sm"
-				   href="{{ .Prefix }}/groups?q={{ .Search }}&cursor={{ .Next }}">Next page</a>
+				   href="{{ .Prefix }}/groups?q={{ .Search }}&cursor={{ .Next }}">{{ .Labels.T("control.next_page") }}</a>
 			</div>
 		@endif
 	@else
 		<div class="mt-6">
 			{!! components.Empty(components.EmptyProps{
-				Title:   "No group here",
-				Message: "Nothing matches, or nothing has been created yet.",
+				Title:   .Labels.T("groups.empty_title"),
+				Message: .Labels.T("groups.empty_message"),
 			}) !!}
 		</div>
 	@endif
 
 	<section class="mt-12 border-t pt-8">
-		<h2 class="text-lg font-semibold tracking-tight">New group</h2>
+		<h2 class="text-lg font-semibold tracking-tight">{{ .Labels.T("groups.new") }}</h2>
 		<p class="text-muted-foreground mt-1 text-sm">
-			The slug is the stable name and does not change afterwards.
+			{{ .Labels.T("groups.new_lead") }}
 		</p>
 
 		<form class="mt-4 grid max-w-lg gap-4" method="post" action="{{ .Prefix }}/groups">
 			@csrf
 			<div>
-				{!! components.Label(components.LabelProps{For: "slug", Text: "Slug"}) !!}
+				{!! components.Label(components.LabelProps{For: "slug", Text: .Labels.T("field.slug")}) !!}
 				{!! components.Input(components.InputProps{
 					Name:        "slug",
 					ID:          "slug",
@@ -97,17 +97,17 @@ type IndexData = permission.GroupsPageData
 				}) !!}
 			</div>
 			<div>
-				{!! components.Label(components.LabelProps{For: "name", Text: "Name"}) !!}
+				{!! components.Label(components.LabelProps{For: "name", Text: .Labels.T("field.name")}) !!}
 				{!! components.Input(components.InputProps{Name: "name", ID: "name", Required: true}) !!}
 			</div>
 			<div>
 				{!! components.Textarea(components.TextareaProps{
 					Name:  "description",
-					Label: "Description",
+					Label: .Labels.T("field.description"),
 					Rows:  3,
 				}) !!}
 			</div>
-			{!! components.Button(components.ButtonProps{Label: "Create group", Type: "submit"}) !!}
+			{!! components.Button(components.ButtonProps{Label: .Labels.T("control.create_group"), Type: "submit"}) !!}
 		</form>
 	</section>
 @endsection

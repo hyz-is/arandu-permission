@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/arandu-io/framework/security"
+	"github.com/arandu-io/hesape/translation"
 )
 
 // The defaults for the optional settings. They are constants rather than
@@ -67,6 +68,19 @@ type Config struct {
 	// clamped: a number somebody wrote and did not get is worse than a number
 	// somebody wrote and was told about.
 	PageSize int
+
+	// Translator is the application's own catalogue, asked before the one this
+	// package ships.
+	//
+	// It is optional. Nil means the screens read the shipped sentences, which
+	// is the right default for an application that has not translated anything
+	// -- a panel in English beats a panel showing its own keys.
+	//
+	// An application that sets it overrides a sentence by defining the same key
+	// in its own catalogue. Nothing has to be copied and nothing goes stale:
+	// what is not overridden keeps coming from here, including lines added by a
+	// later release. Lines returns what there is to override.
+	Translator *translation.Translator
 
 	// Listeners are told what changed, after it has changed.
 	//

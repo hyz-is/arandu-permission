@@ -18,30 +18,29 @@ type IndexData = permission.MatrixPageData
 @section('content')
 	<div class="flex items-start justify-between gap-4">
 		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">Groups and permissions</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("matrix.title") }}</h1>
 			<p class="text-muted-foreground mt-1 text-sm">
-				One row per group, one column per permission. A row is edited on its own screen,
-				where the change is summarised before it is written.
+				{{ .Labels.T("matrix.lead") }}
 			</p>
 		</div>
 		<nav class="flex items-center gap-2">
-			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/groups">Groups</a>
-			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/catalogue">Permissions</a>
+			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/groups">{{ .Labels.T("groups.title") }}</a>
+			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/catalogue">{{ .Labels.T("catalogue.title") }}</a>
 		</nav>
 	</div>
 
 	<form class="mt-8 flex items-end gap-2" method="get" action="{{ .Prefix }}/matrix">
 		<div class="grow">
-			{!! components.Label(components.LabelProps{For: "q", Text: "Search"}) !!}
+			{!! components.Label(components.LabelProps{For: "q", Text: .Labels.T("field.search")}) !!}
 			{!! components.Input(components.InputProps{
 				Name:        "q",
 				ID:          "q",
 				Type:        "search",
 				Value:       .Search,
-				Placeholder: "slug or name",
+				Placeholder: .Labels.T("control.search_placeholder"),
 			}) !!}
 		</div>
-		{!! components.Button(components.ButtonProps{Label: "Search", Type: "submit", Variant: "outline"}) !!}
+		{!! components.Button(components.ButtonProps{Label: .Labels.T("field.search"), Type: "submit", Variant: "outline"}) !!}
 	</form>
 
 	@if(len(.Matrix.Rows) > 0)
@@ -52,9 +51,9 @@ type IndexData = permission.MatrixPageData
 			<table class="w-full text-left text-xs">
 				<thead>
 					<tr class="border-b">
-						<th class="sticky left-0 z-10 bg-background px-3 py-2 font-semibold">Group</th>
+						<th class="sticky left-0 z-10 bg-background px-3 py-2 font-semibold">{{ .Labels.T("noun.group_one") }}</th>
 						@foreach(.Matrix.Actions as action)
-							<th class="px-2 py-2 font-mono font-normal whitespace-nowrap">{{ string(action) }}</th>
+							<th class="px-2 py-2 font-normal whitespace-nowrap" title="{{ string(action) }}">{{ .Labels.Action(action) }}</th>
 						@endforeach
 					</tr>
 				</thead>
@@ -64,7 +63,7 @@ type IndexData = permission.MatrixPageData
 							<th class="sticky left-0 z-10 bg-background px-3 py-2 font-medium whitespace-nowrap">
 								<a class="hover:underline" href="{{ .Prefix }}/groups/{{ row.Group.ID }}">{{ row.Group.Slug }}</a>
 								@if(row.System)
-									{!! components.Badge(components.BadgeProps{Label: "system", Variant: "secondary"}) !!}
+									{!! components.Badge(components.BadgeProps{Label: .Labels.T("group.system"), Variant: "secondary"}) !!}
 								@endif
 							</th>
 							@foreach(row.Cells as cell)
@@ -85,15 +84,15 @@ type IndexData = permission.MatrixPageData
 		@if(.Matrix.Next != "")
 			<div class="mt-6 flex justify-end">
 				<a class="btn" data-variant="outline" data-size="sm"
-				   href="{{ .Prefix }}/matrix?q={{ .Search }}&cursor={{ .Matrix.Next }}">Next page</a>
+				   href="{{ .Prefix }}/matrix?q={{ .Search }}&cursor={{ .Matrix.Next }}">{{ .Labels.T("control.next_page") }}</a>
 			</div>
 		@endif
 	@else
 		<div class="mt-6">
 			{!! components.Empty(components.EmptyProps{
-				Title:       "No group here",
-				Message:     "Nothing matches, or nothing has been created yet.",
-				ActionLabel: "Create one",
+				Title:       .Labels.T("groups.empty_title"),
+				Message:     .Labels.T("groups.empty_message"),
+				ActionLabel: .Labels.T("control.create_group"),
 				ActionURL:   .Prefix + "/groups",
 			}) !!}
 		</div>
