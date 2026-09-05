@@ -64,7 +64,7 @@ this one must prove about itself it proves in its own suite or nowhere.
 | --- | --- |
 | 11 Go files, one per role, all in one package at the root | `ls *.go \| wc -l` |
 | 13 test files | `find tests -name '*_test.go' \| wc -l` |
-| 13 routes | `grep -c 'guarded.Action' module.go` |
+| 14 routes | `grep -c 'guarded.Action' module.go` |
 | 12 actions the policies answer about | `grep -cE '^\t[A-Za-z]+ security.Action = ' policy.go` |
 | 8 commands | `grep -c '^\t\t\tRun:' command.go` |
 | 2 locales | `ls resources/lang \| wc -l` |

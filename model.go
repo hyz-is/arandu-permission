@@ -314,6 +314,45 @@ func (e Effective) Roles() []string {
 	return out
 }
 
+// MemberRef is one person as a listing names them: who they are, what puts them
+// there, and nothing else.
+//
+// There is no name and no address on it, and there cannot be. This package does
+// not own the table people are in -- it owns rows about them -- so a listing here
+// answers "who has this module written something about", which is a different
+// question from "who are the users" and is the only one it can answer honestly.
+// An application that wants names joins these identifiers to its own table.
+type MemberRef struct {
+	// UserID is who this is about.
+	UserID string
+	// Groups are the groups they are in, sorted by slug.
+	Groups []GroupRef
+	// Direct is how many permissions they carry in their own right. It is a
+	// count and not the list, because the listing is one line per person and a
+	// person with forty of them would be forty lines.
+	Direct int
+}
+
+// MemberQuery is what a listing of people asks for.
+type MemberQuery struct {
+	// Group narrows the listing to one group, by slug. Empty is everybody.
+	Group string
+	// Cursor is where this page resumes, taken from the previous page's Next.
+	Cursor string
+	// Limit is how many people the page holds. Zero means the default, and
+	// anything above the maximum is brought down to it.
+	Limit int
+}
+
+// MemberPage is a page of people and where the next one resumes.
+type MemberPage struct {
+	// Items are the people, in identifier order.
+	Items []MemberRef
+	// Next is what the next request passes back as a cursor, empty when this
+	// page is the last one.
+	Next string
+}
+
 // GroupPage is a page of groups and where the next one resumes.
 type GroupPage struct {
 	// Items are the groups, in slug order.

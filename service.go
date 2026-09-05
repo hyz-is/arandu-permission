@@ -875,6 +875,165 @@ func (s *PermissionService) SetDirectActions(ctx context.Context, actor security
 	return change, nil
 }
 
+// ListMembers returns a page of the people this module has written a row about.
+//
+// It is not a list of the application's users, and it cannot be: this package
+// does not own that table. It answers "who is in a group, or carries something in
+// their own right", which is the set an administrator is actually looking through
+// when they open a permissions panel.
+//
+// Two tables carry that set, and neither is authoritative on its own. They are
+// read side by side, and the page stops at the point beyond which one of them
+// might still have something the other does not -- so a page never claims to be
+// complete past what both reads reached. The cost is that a page can come back
+// shorter than the limit with more to follow, which is why Next is what says
+// whether there is more rather than the count of what came back.
+func (s *PermissionService) ListMembers(ctx context.Context, actor security.Subject, q MemberQuery) (MemberPage, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionList, Group{})
+	if err != nil {
+		return MemberPage{}, err
+	}
+
+	limit := q.Limit
+	switch {
+	case limit <= 0:
+		limit = defaultLimit
+	case limit > maxLimit:
+		limit = maxLimit
+	}
+	// How far past the page each read goes. One person can have many rows in
+	// either table, so a read of exactly the page size can hold a single
+	// identifier; this is the slack that makes that unlikely without making the
+	// read unbounded.
+	reach := min(limit*8, maxLimit*8)
+
+	var restrict string
+	if slug := strings.TrimSpace(q.Group); slug != "" {
+		record, err := Groups(s.db).NewQuery().Where("slug", "=", slug).First(ctx, g)
+		if err != nil {
+			return MemberPage{}, err
+		}
+		if record == nil {
+			return MemberPage{}, ErrNotFound
+		}
+		restrict = record.ID
+	}
+
+	memberships := GroupUsers(s.db).NewQuery()
+	if restrict != "" {
+		memberships = memberships.Where("group_id", "=", restrict)
+	}
+	if q.Cursor != "" {
+		memberships = memberships.Where("user_id", ">", q.Cursor)
+	}
+	rows, err := memberships.OrderBy("user_id").Limit(reach).Get(ctx, g)
+	if err != nil {
+		return MemberPage{}, err
+	}
+
+	seen := map[string]bool{}
+	last := ""
+	full := len(rows) == reach
+	for _, row := range rows {
+		if row != nil {
+			seen[row.UserID] = true
+			last = row.UserID
+		}
+	}
+	watermark := ""
+	if full {
+		watermark = last
+	}
+
+	// The direct grants are read only when nothing narrowed the listing to one
+	// group: a person with no membership in that group does not belong on the
+	// page, whatever else they carry.
+	if restrict == "" {
+		own := UserActions(s.db).NewQuery()
+		if q.Cursor != "" {
+			own = own.Where("user_id", ">", q.Cursor)
+		}
+		grants, err := own.OrderBy("user_id").Limit(reach).Get(ctx, g)
+		if err != nil {
+			return MemberPage{}, err
+		}
+		lastOwn := ""
+		for _, row := range grants {
+			if row != nil {
+				seen[row.UserID] = true
+				lastOwn = row.UserID
+			}
+		}
+		if len(grants) == reach && (watermark == "" || lastOwn < watermark) {
+			watermark = lastOwn
+		}
+	}
+
+	ordered := make([]string, 0, len(seen))
+	for userID := range seen {
+		// Past the watermark one of the two reads may still hold something, so
+		// a person there is not known to be complete and waits for the next
+		// page.
+		if watermark != "" && userID > watermark {
+			continue
+		}
+		ordered = append(ordered, userID)
+	}
+	sort.Strings(ordered)
+
+	out := MemberPage{Items: make([]MemberRef, 0, min(limit, len(ordered)))}
+	if len(ordered) > limit {
+		out.Next = ordered[limit-1]
+		ordered = ordered[:limit]
+	} else if watermark != "" {
+		out.Next = watermark
+	}
+	if len(ordered) == 0 {
+		return MemberPage{}, nil
+	}
+
+	refs, err := s.groupRefs(ctx, g)
+	if err != nil {
+		return MemberPage{}, err
+	}
+	ids := make([]any, 0, len(ordered))
+	for _, userID := range ordered {
+		ids = append(ids, userID)
+	}
+
+	belongs := map[string][]GroupRef{}
+	links, err := GroupUsers(s.db).NewQuery().WhereIn("user_id", ids).Get(ctx, g)
+	if err != nil {
+		return MemberPage{}, err
+	}
+	for _, link := range links {
+		if link == nil {
+			continue
+		}
+		if ref, known := refs[link.GroupID]; known {
+			belongs[link.UserID] = append(belongs[link.UserID], ref)
+		}
+	}
+
+	carries := map[string]int{}
+	grants, err := UserActions(s.db).NewQuery().WhereIn("user_id", ids).Get(ctx, g)
+	if err != nil {
+		return MemberPage{}, err
+	}
+	for _, row := range grants {
+		if row != nil && s.catalogue.Has(security.Action(row.Action)) {
+			carries[row.UserID]++
+		}
+	}
+
+	for _, userID := range ordered {
+		owned := belongs[userID]
+		sortRefs(owned)
+		out.Items = append(out.Items, MemberRef{UserID: userID, Groups: owned, Direct: carries[userID]})
+	}
+	return out, nil
+}
+
 // EffectiveFor returns what one person may do, and which group gives them each
 // of it.
 //

@@ -73,6 +73,14 @@
         "kept": "mantidas como estão",
         "warning": "Nada é gravado até o resumo ser aprovado."
     },
+    "members": {
+        "title": "Pessoas",
+        "lead": "Todo mundo sobre quem este painel gravou algo: em um grupo, ou carregando algo por conta própria.",
+        "all_groups": "Todos os grupos",
+        "direct_count": "diretas",
+        "empty_title": "Ninguém ainda",
+        "empty_message": "Nenhum grupo tem membro e nada foi dado diretamente a ninguém."
+    },
     "domain": {
         "permission": "Permissões"
     },

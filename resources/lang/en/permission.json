@@ -73,6 +73,14 @@
         "kept": "kept as they are",
         "warning": "Nothing is written until the summary is approved."
     },
+    "members": {
+        "title": "People",
+        "lead": "Everybody this panel has written a row about: in a group, or carrying something in their own right.",
+        "all_groups": "Every group",
+        "direct_count": "direct",
+        "empty_title": "Nobody yet",
+        "empty_message": "No group has a member and nothing has been given to anybody directly."
+    },
     "domain": {
         "permission": "Permissions"
     },

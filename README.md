@@ -133,6 +133,7 @@ Under the configured prefix, `/permission` by default.
 | `PUT` | `/groups/{group}/members` | `permission.assign` | `permission.assign` |
 | `GET` | `/catalogue` | `permission.catalogue` | `permission.list` |
 | `GET` | `/matrix` | `permission.matrix` | `permission.list` |
+| `GET` | `/users` | `permission.members` | `permission.list` |
 | `GET` | `/users/{user}` | `permission.member` | `permission.view` |
 | `POST` | `/users/{user}/summary` | `permission.member.summary` | `permission.view` |
 | `PUT` | `/users/{user}/actions` | `permission.member.grant` | `permission.grant_direct` |

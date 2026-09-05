@@ -271,3 +271,88 @@ func TestADirectGrantIsCheckedAgainstTheCatalogue(t *testing.T) {
 		t.Fatalf("granting an undeclared action = %v, want ErrUnknownAction", err)
 	}
 }
+
+// TestTheListingAnswersWhoThisPanelHasWrittenAboutAndPagesCorrectly holds the
+// people listing, which is the screen the reference has and this had not.
+//
+// Two tables carry the set and neither is authoritative on its own, so what is
+// checked here is the invariant that makes the page honest: everybody it says is
+// there is there, and Next rather than the count of rows is what says whether
+// there is more.
+func TestTheListingAnswersWhoThisPanelHasWrittenAboutAndPagesCorrectly(t *testing.T) {
+	t.Parallel()
+
+	svc := service(t)
+	ctx := context.Background()
+	actor := operator("acme", "invoice.delete")
+
+	group := seed(t, svc, actor, permission.CreateGroupRequest{Slug: "billing", Name: "Billing"})
+	other := seed(t, svc, actor, permission.CreateGroupRequest{Slug: "editors", Name: "Editors"})
+	if _, err := svc.SetMembers(ctx, actor, group.ID, []string{"aaa", "bbb", "ccc"}); err != nil {
+		t.Fatalf("assigning: %v", err)
+	}
+	if _, err := svc.SetMembers(ctx, actor, other.ID, []string{"bbb"}); err != nil {
+		t.Fatalf("assigning to the second group: %v", err)
+	}
+	// Somebody in no group at all, reachable only through the second table.
+	if _, err := svc.SetDirectActions(ctx, actor, "zzz", []security.Action{"invoice.delete"}); err != nil {
+		t.Fatalf("granting directly: %v", err)
+	}
+
+	// Every distinct person, however the rows reach them.
+	seen := map[string]permission.MemberRef{}
+	cursor := ""
+	for range 10 {
+		page, err := svc.ListMembers(ctx, actor, permission.MemberQuery{Cursor: cursor, Limit: 2})
+		if err != nil {
+			t.Fatalf("listing: %v", err)
+		}
+		for _, person := range page.Items {
+			if _, repeated := seen[person.UserID]; repeated {
+				t.Errorf("%s came back on two pages", person.UserID)
+			}
+			seen[person.UserID] = person
+		}
+		if page.Next == "" {
+			break
+		}
+		cursor = page.Next
+	}
+
+	for _, want := range []string{"aaa", "bbb", "ccc", "zzz"} {
+		if _, found := seen[want]; !found {
+			t.Errorf("%s is not in the listing", want)
+		}
+	}
+	if len(seen) != 4 {
+		t.Errorf("the listing holds %d people, want 4", len(seen))
+	}
+	if got := len(seen["bbb"].Groups); got != 2 {
+		t.Errorf("bbb is listed in %d groups, want 2", got)
+	}
+	if got := seen["zzz"]; got.Direct != 1 || len(got.Groups) != 0 {
+		t.Errorf("zzz reads as %+v, want one direct permission and no group", got)
+	}
+	if got := seen["aaa"].Direct; got != 0 {
+		t.Errorf("aaa carries %d direct permissions, want none", got)
+	}
+
+	// Narrowed to one group, the direct grants of somebody outside it do not
+	// put them on the page.
+	page, err := svc.ListMembers(ctx, actor, permission.MemberQuery{Group: "editors", Limit: 50})
+	if err != nil {
+		t.Fatalf("listing one group: %v", err)
+	}
+	if len(page.Items) != 1 || page.Items[0].UserID != "bbb" {
+		t.Errorf("the editors listing holds %+v, want only bbb", page.Items)
+	}
+	if _, err := svc.ListMembers(ctx, actor, permission.MemberQuery{Group: "nothing"}); !errors.Is(err, permission.ErrNotFound) {
+		t.Errorf("narrowing by a group that does not exist = %v, want ErrNotFound", err)
+	}
+
+	// And it is a read, so it is behind a policy like every other one.
+	stranger := security.Subject{ID: "nobody", Tenant: "acme", Verified: true}
+	if _, err := svc.ListMembers(ctx, stranger, permission.MemberQuery{}); !errors.Is(err, security.ErrForbidden) {
+		t.Errorf("a stranger listing people = %v, want ErrForbidden", err)
+	}
+}

@@ -49,6 +49,10 @@ unchanged, and `aru migrate` is the one step that is not optional.
   `TranslationGroup`, `ActionKeyPrefix`, `DomainKeyPrefix`. The label of an
   action is derived from the action and resolved when the page is drawn; one
   nobody has written a sentence for reads as its identifier.
+- A listing of the people this panel has written a row about, with the group it
+  is narrowed by: `MemberRef`, `MemberQuery`, `MemberPage`, `ListMembers`, the
+  `/users` route and a seventh view. It is not a list of the application's users
+  and cannot be — this package does not own that table.
 - `(*Module).Service`, so a seed, a migration or a job reaches the same
   authorized use cases a screen calls.
 - `permission.grant_direct` and `permission.revoke_direct`, in `Actions()`.

@@ -76,6 +76,7 @@ func TestTheRenderedNamesAreTheNamesTheArchiveCarries(t *testing.T) {
 		permission.ViewMatrix,
 		permission.ViewSummary,
 		permission.ViewMember,
+		permission.ViewMembers,
 	}
 	for _, name := range rendered {
 		if !published[name] {

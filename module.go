@@ -82,6 +82,9 @@ const (
 	// ViewMember is one person's effective permissions and where each comes
 	// from.
 	ViewMember = "vendor.permission.users.show"
+	// ViewMembers is the listing of everybody this module has written a row
+	// about.
+	ViewMembers = "vendor.permission.users.index"
 )
 
 // Module is what the application registers.
@@ -190,6 +193,7 @@ func routePatterns(prefix string) []routePattern {
 		{stdhttp.MethodPut, prefix + "/groups/{group}/members"},
 		{stdhttp.MethodGet, prefix + "/catalogue"},
 		{stdhttp.MethodGet, prefix + "/matrix"},
+		{stdhttp.MethodGet, prefix + "/users"},
 		{stdhttp.MethodGet, prefix + "/users/{user}"},
 		{stdhttp.MethodPost, prefix + "/users/{user}/summary"},
 		{stdhttp.MethodPut, prefix + "/users/{user}/actions"},
@@ -235,6 +239,8 @@ func (m *Module) Routes(r *fhttp.Router) {
 		Name("permission.catalogue").Can(PermissionList)
 	guarded.Action(stdhttp.MethodGet, m.cfg.Prefix+"/matrix", m.matrix).
 		Name("permission.matrix").Can(PermissionList)
+	guarded.Action(stdhttp.MethodGet, m.cfg.Prefix+"/users", m.members).
+		Name("permission.members").Can(PermissionList)
 	guarded.Action(stdhttp.MethodGet, m.cfg.Prefix+"/users/{user}", m.member).
 		Name("permission.member").Can(PermissionView)
 	guarded.Action(stdhttp.MethodPost, m.cfg.Prefix+"/users/{user}/summary", m.memberSummary).
@@ -417,6 +423,23 @@ type SummaryPageData struct {
 	// Fields are the values the confirmation resubmits, so that approving the
 	// summary sends the same request that produced it.
 	Fields []string
+}
+
+// MembersPageData is the listing of everybody this module has written a row
+// about.
+type MembersPageData struct {
+	hview.Page
+
+	Prefix string
+	Labels Labels
+	// Group is the slug the listing was narrowed by, echoed back so the control
+	// still says what is being looked at.
+	Group string
+	// Groups are every group of the tenant, for the control that narrows by one.
+	Groups []GroupRef
+	// Members are the rows, and Next is the cursor of the following page.
+	Members []MemberRef
+	Next    string
 }
 
 // MemberPageData is one person's effective permissions and where each of them
@@ -634,6 +657,36 @@ func (m *Module) matrix(ctx *fhttp.Context) error {
 		Labels: labels,
 		Search: search,
 		Matrix: grid,
+	})
+}
+
+// members answers a page of the people this module has written a row about.
+func (m *Module) members(ctx *fhttp.Context) error {
+	actor := m.subject(ctx.Request)
+	slug := ctx.Query("group")
+
+	page, err := m.svc.ListMembers(ctx.Ctx(), actor, MemberQuery{
+		Group:  slug,
+		Cursor: ctx.Query("cursor"),
+		Limit:  m.cfg.PageSize,
+	})
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+	groups, err := m.svc.ListGroups(ctx.Ctx(), actor, GroupQuery{Limit: MaxPageSize})
+	if err != nil {
+		return m.answer(ctx, err)
+	}
+
+	labels := m.Labels(m.locale(ctx.Request))
+	return ctx.View(ViewMembers, MembersPageData{
+		Page:    m.page(ctx, labels.T("members.title")),
+		Prefix:  m.cfg.Prefix,
+		Labels:  labels,
+		Group:   slug,
+		Groups:  groups.Items,
+		Members: page.Items,
+		Next:    page.Next,
 	})
 }
 
