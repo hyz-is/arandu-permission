@@ -90,6 +90,8 @@ func TestCIGuardsIncompatibleAPIChanges(t *testing.T) {
 	ci := readReleaseFile(t, packageRoot(t), ".github/workflows/ci.yml")
 	required := []string{
 		"fetch-depth: 0",
+		"go vet -tags example ./example",
+		"go run -tags example ./example",
 		"name: api diff against the last release",
 		`modpath=$(GOWORK=off go list -m -f '{{.Path}}')`,
 		`git show "${tag}:go.mod"`,

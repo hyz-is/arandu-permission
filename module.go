@@ -138,6 +138,19 @@ func New(cfg Config, db *data.DB, sessions *security.SessionStore, csrf *securit
 	}, nil
 }
 
+// Service returns the use cases this module is built on.
+//
+// It is exported because an application needs them outside a request: a seed
+// creates the first group, a migration back-fills a tenant, a job reconciles
+// what an external directory says. Every one of those is the same use case a
+// screen calls, and reaching it here is what keeps them from being written a
+// second time against the tables.
+//
+// It is not a way past anything. Every method on it authorizes, and none of them
+// takes a Grant -- so the caller supplies a subject and a policy decides, which
+// is exactly what happens when the caller is a handler.
+func (m *Module) Service() *PermissionService { return m.svc }
+
 // Name is the module identifier: a lowercase slug, stable, no spaces.
 //
 // It is what route listings group by and what the route names are prefixed

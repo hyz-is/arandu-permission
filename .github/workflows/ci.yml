@@ -48,6 +48,14 @@ jobs:
       - name: test
         run: go test -race ./...
 
+      # The example is behind a build tag, so nothing above compiles it. A tag
+      # is what keeps a main package out of an installer's build; it is also
+      # what lets an example rot silently, and this is the answer to that.
+      - name: example
+        run: |
+          go vet -tags example ./example
+          go run -tags example ./example > /dev/null
+
       # A v0 release may break, but every break must tell an installer exactly
       # what to replace. Module mode also sees a deleted package or type that a
       # loop over the current package list would miss.
