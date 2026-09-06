@@ -111,7 +111,10 @@ func TestEveryActionOfThisPackageHasALabel(t *testing.T) {
 func TestEveryKeyAViewReadsIsShipped(t *testing.T) {
 	t.Parallel()
 
-	root := filepath.Join(packageRoot(t), "resources", "views")
+	// The archive, which is not the address the files are published to: the
+	// destination carries a vendor segment, and go mod publishes no path that
+	// has one.
+	root := filepath.Join(packageRoot(t), "resources", "publish")
 	read := regexp.MustCompile(`\.Labels\.T\("([^"]+)"\)`)
 	lines := permission.Lines(permission.FallbackLocale)
 
