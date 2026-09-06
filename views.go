@@ -23,7 +23,7 @@ import (
 // from what anybody downloads, and this embed then matches nothing in their
 // build.
 //
-//go:embed resources/publish
+//go:embed all:resources/publish/*/*.kyse.go
 var viewSources embed.FS
 
 // Where a view is kept, where it is written, and what it is called.
