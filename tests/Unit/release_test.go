@@ -20,7 +20,7 @@ import (
 // It is written here and compared against the changelog rather than read out of
 // it: a test that took the number from the file it checks would pass on a file
 // that lost its heading.
-const currentVersion = "0.2.0"
+const currentVersion = "0.2.3"
 
 func TestTheManifestFrameworkFloorMatchesGoMod(t *testing.T) {
 	root := packageRoot(t)
@@ -82,6 +82,106 @@ func TestTheFirstReleaseNamesWhatCannotBeFixedLater(t *testing.T) {
 	} {
 		if !strings.Contains(upgrade, want) {
 			t.Errorf("UPGRADE.md does not name %s", want)
+		}
+	}
+}
+
+// releasedChangelog is CHANGELOG.md with the [Unreleased] section removed.
+//
+// Everything a tag shipped has to be under a version heading. The section above
+// the first one is where work waits, and a release that forgets to move it is a
+// published version whose own changelog calls its contents unreleased -- which
+// is what v0.2.1 and v0.2.2 of this package did: both went out with no entry
+// in either release file.
+func releasedChangelog(t *testing.T) string {
+	t.Helper()
+	body := readReleaseFile(t, packageRoot(t), "CHANGELOG.md")
+	first := regexp.MustCompile(`(?m)^## \[[0-9]`).FindStringIndex(body)
+	if first == nil {
+		t.Fatal("CHANGELOG.md has no version heading")
+	}
+	return body[first[0]:]
+}
+
+// TestEveryActionIsNamedInAReleasedChangelogEntry is the gate that catches a
+// tag pushed without filing what it shipped.
+//
+// An action is added in the same change that adds the capability behind it, so
+// an action still sitting in [Unreleased] means the version that introduced it
+// went out undocumented. It is the cheapest signal of that, and it needs no git
+// history to read.
+func TestEveryActionIsNamedInAReleasedChangelogEntry(t *testing.T) {
+	policy := readReleaseFile(t, packageRoot(t), "policy.go")
+	released := releasedChangelog(t)
+
+	names := regexp.MustCompile(`(?m)^\t([A-Z][A-Za-z]*) security\.Action = `).FindAllStringSubmatch(policy, -1)
+	if len(names) == 0 {
+		t.Fatal("policy.go declares no actions")
+	}
+	for _, name := range names {
+		if !strings.Contains(released, "`"+name[1]+"`") {
+			t.Errorf("no released changelog entry names %s", name[1])
+		}
+	}
+}
+
+// TestEveryMigrationIsNamedInAReleasedChangelogEntry holds the same for schema.
+//
+// A migration is the one thing an operator has to run before a version serves,
+// so a version that shipped one and did not say so is a version that fails at
+// the first request against a column that is not there.
+func TestEveryMigrationIsNamedInAReleasedChangelogEntry(t *testing.T) {
+	module := readReleaseFile(t, packageRoot(t), "module.go")
+	released := releasedChangelog(t)
+
+	ids := regexp.MustCompile(`"([0-9]{8}_[0-9]{4}_[a-z_]+)"`).FindAllStringSubmatch(module, -1)
+	if len(ids) == 0 {
+		t.Fatal("module.go declares no migrations")
+	}
+	seen := map[string]bool{}
+	for _, id := range ids {
+		if seen[id[1]] {
+			continue
+		}
+		seen[id[1]] = true
+		if !strings.Contains(released, id[1]) {
+			t.Errorf("no released changelog entry names migration %s", id[1])
+		}
+	}
+}
+
+// TestEveryChangelogVersionHasUpgradeNotes keeps the two files describing the
+// same set of releases.
+//
+// They drifted once already: two releases were tagged with no entry in either
+// of them.
+func TestEveryChangelogVersionHasUpgradeNotes(t *testing.T) {
+	root := packageRoot(t)
+	changelog := readReleaseFile(t, root, "CHANGELOG.md")
+	upgrade := readReleaseFile(t, root, "UPGRADE.md")
+
+	inChangelog := regexp.MustCompile(`(?m)^## \[([0-9]+\.[0-9]+\.[0-9]+)\] - `).FindAllStringSubmatch(changelog, -1)
+	inUpgrade := regexp.MustCompile(`(?m)^## v([0-9]+\.[0-9]+\.[0-9]+)$`).FindAllStringSubmatch(upgrade, -1)
+	if len(inChangelog) == 0 || len(inUpgrade) == 0 {
+		t.Fatal("one of the two release files has no version heading")
+	}
+
+	versions := func(matches [][]string) map[string]bool {
+		out := map[string]bool{}
+		for _, m := range matches {
+			out[m[1]] = true
+		}
+		return out
+	}
+	logged, upgraded := versions(inChangelog), versions(inUpgrade)
+	for v := range logged {
+		if !upgraded[v] {
+			t.Errorf("CHANGELOG.md has %s and UPGRADE.md has no notes for it", v)
+		}
+	}
+	for v := range upgraded {
+		if !logged[v] {
+			t.Errorf("UPGRADE.md has notes for %s and CHANGELOG.md has no entry for it", v)
 		}
 	}
 }

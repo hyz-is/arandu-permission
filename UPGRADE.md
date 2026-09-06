@@ -4,6 +4,25 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
+## v0.2.3
+
+Nothing to change. `v0.2.1` and `v0.2.2` had no entry in either release file;
+they are recorded now, and three tests hold an action or a migration this
+package declares to a version heading rather than to `[Unreleased]`.
+
+## v0.2.2
+
+Reinstall, and rebuild the views. The published `v0.2.1` archive carried what
+the view compiler writes beside the sources rather than the sources. Run
+`aru vendor:publish --tag=view --apply` and `aru view:build` after upgrading.
+
+## v0.2.1
+
+Nothing to change, and everything to reinstall. The published `v0.2.0` archive
+was missing its view sources -- `go mod` drops every path with a segment named
+`vendor` when it packs a module. The files land at the same addresses under the
+same view names; what changed is where the archive carries them.
+
 ## v0.2.0
 
 Nothing was removed and nothing changed meaning, so an application on v0.1.0
