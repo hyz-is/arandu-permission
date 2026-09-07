@@ -2,6 +2,8 @@ github.com/arandu-io/framework v0.46.0 h1:yy/uMGOiAWJGPAzK80TF6oALvCUA6McdO7LiKg
 github.com/arandu-io/framework v0.46.0/go.mod h1:NvrVhe8XGcyyGOkeh+UixZdl5vByfiIW+jlj592eIVY=
 github.com/arandu-io/hesape v0.25.1 h1:PLSc97yBVU0/B6ykDymA75oX8XKCPkzrvhI8xfp/KXw=
 github.com/arandu-io/hesape v0.25.1/go.mod h1:KNXJJuKrDIpWvJgNbE2LxtHkOqO4J6cqPkmMcNlxrL0=
+github.com/arandu-io/hesape v0.28.0 h1:NVQm4uV8oEWT+W6XwZS7CPYmqsTeoO2dwpE5e8OCqDk=
+github.com/arandu-io/hesape v0.28.0/go.mod h1:KNXJJuKrDIpWvJgNbE2LxtHkOqO4J6cqPkmMcNlxrL0=
 github.com/arandu-io/hesape/database/connectors/sqlite v0.7.1 h1:WVzNGpZpaSUL+RHXyyxHT7miUk397RKh70yzmHDAYFM=
 github.com/arandu-io/hesape/database/connectors/sqlite v0.7.1/go.mod h1:UV7Sfqbq+AFZJahvkefxJv6BKETRtInpw4YMzMnhOuE=
 github.com/arandu-io/kyse v0.18.0 h1:swqDuWzRglV0YWVhd7YzqJlcFSCFRKUy4X2kZEs4qZg=

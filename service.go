@@ -372,11 +372,7 @@ func (s *PermissionService) Bootstrap(ctx context.Context, tenant string, in Boo
 	// hold in order to grant it: nobody hands out what they do not hold, and
 	// that rule is not suspended here.
 	carries := append(Actions(), in.Actions...)
-	roles := make([]string, 0, len(carries))
-	for _, action := range carries {
-		roles = append(roles, string(action))
-	}
-	actor := security.Subject{ID: "bootstrap", Tenant: tenant, Roles: roles, Verified: true}
+	actor := security.Subject{ID: "bootstrap", Tenant: tenant, Actions: carries, Verified: true}
 
 	g, err := security.Authorize(ctx, s.groups, actor, PermissionCreate, Group{Slug: in.Slug, Name: in.Name})
 	if err != nil {
@@ -1055,8 +1051,8 @@ type Resolution struct {
 	// compared for equality against the current one to decide whether a
 	// remembered answer is still the answer.
 	Version int64
-	// Roles are the effective actions, one entry per distinct action, sorted.
-	Roles []string
+	// Actions are the effective actions, one entry per distinct action, sorted.
+	Actions []security.Action
 	// Groups are the groups the subject belongs to, sorted by slug. They name
 	// the origin on a screen and are never read as authorization: a group is
 	// not a permission, and a decision taken on a group name would be a
@@ -1086,7 +1082,7 @@ func (s *PermissionService) ResolveOwn(ctx context.Context, actor security.Subje
 	if err != nil {
 		return Resolution{}, err
 	}
-	return Resolution{Version: version, Roles: effective.Roles(), Groups: effective.Groups}, nil
+	return Resolution{Version: version, Actions: effective.Actions(), Groups: effective.Groups}, nil
 }
 
 // Version returns the tenant's permission token.

@@ -46,7 +46,7 @@ type resolverKey struct {
 // resolverEntry is a remembered answer and the token it was read at.
 type resolverEntry struct {
 	version int64
-	roles   []string
+	actions []security.Action
 }
 
 // NewResolver wires a resolver over the service, remembering at most limit
@@ -64,7 +64,7 @@ func NewResolver(service *PermissionService, limit int) *Resolver {
 // and the policy admits exactly that. A subject with no identifier is answered
 // with nothing rather than with a query, because there is nobody to answer
 // about.
-func (r *Resolver) Resolve(ctx context.Context, subject security.Subject) ([]string, error) {
+func (r *Resolver) Resolve(ctx context.Context, subject security.Subject) ([]security.Action, error) {
 	if subject.ID == "" || subject.Tenant == "" {
 		return nil, nil
 	}
@@ -79,15 +79,15 @@ func (r *Resolver) Resolve(ctx context.Context, subject security.Subject) ([]str
 	entry, remembered := r.entries[key]
 	r.mu.RUnlock()
 	if remembered && entry.version == version {
-		return append([]string(nil), entry.roles...), nil
+		return append([]security.Action(nil), entry.actions...), nil
 	}
 
 	resolved, err := r.service.ResolveOwn(ctx, subject)
 	if err != nil {
 		return nil, err
 	}
-	r.remember(key, resolverEntry{version: resolved.Version, roles: resolved.Roles})
-	return append([]string(nil), resolved.Roles...), nil
+	r.remember(key, resolverEntry{version: resolved.Version, actions: resolved.Actions})
+	return append([]security.Action(nil), resolved.Actions...), nil
 }
 
 // Forget drops every remembered answer.
@@ -142,7 +142,7 @@ func (m *Module) Roles() fhttp.Middleware {
 				return
 			}
 
-			roles, err := m.roles.Resolve(r.Context(), subject)
+			actions, err := m.roles.Resolve(r.Context(), subject)
 			if err != nil {
 				// The request is refused rather than carried on with an empty
 				// set. An unreadable permission store is not a subject with no
@@ -152,7 +152,12 @@ func (m *Module) Roles() fhttp.Middleware {
 				return
 			}
 
-			subject.Roles = roles
+			// Actions, and never Roles. Roles is what a subject IS, and an
+			// application decides by it: writing permissions there made every
+			// HasRole("admin") in a consuming application answer false the
+			// moment this middleware ran, with both sides []string and nothing
+			// in the build to say so.
+			subject.Actions = actions
 			next.ServeHTTP(w, r.WithContext(auth.WithSubject(r.Context(), subject)))
 		})
 	}
@@ -203,8 +208,8 @@ func (m *Module) Require(actions ...security.Action) fhttp.Middleware {
 				fhttp.Refuse(w, r, http.StatusUnauthorized, "unauthorized")
 				return
 			}
-			for role := range wanted {
-				if subject.HasRole(role) {
+			for action := range wanted {
+				if subject.Can(security.Action(action)) {
 					next.ServeHTTP(w, r)
 					return
 				}

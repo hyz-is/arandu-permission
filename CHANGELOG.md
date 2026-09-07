@@ -10,6 +10,36 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-07
+
+### Fixed
+
+- The resolved permissions go into `Subject.Actions`, not `Subject.Roles`. A
+  role is what somebody is; an action is what they may do. This package wrote
+  the flat list of actions into `Roles` because that was the only field
+  `auth.Subject` had -- and from the moment its middleware ran, every policy in
+  the application asking `HasRole("admin")` answered false. Both sides were
+  `[]string`, so nothing in the build said a word, and what the application saw
+  was administrators losing everything. Reported by the Corujão.ai team against
+  144 `HasRole` calls in 30 policies. Hesape `v0.28.0` adds `Subject.Actions`
+  and `Subject.Can`; this fills the first and asks the second.
+- An action declared by both this package and the application is refused rather
+  than deduplicated. The guide says to splice the two lists, so a repeat of one
+  of this package's actions means the application chose the same slug -- and the
+  two are not the same authorization: this package's `permission.create` opens
+  the screen that administers groups, and an application's governs whatever its
+  own policy reads. They collapsed into one entry, silently, and granting either
+  granted both. `NewCatalogue` now names the action and says that renaming one
+  is a decision only whoever wrote both lists can take. A repeat of the
+  application's own action is still free.
+
+### Changed
+
+- `Effective.Roles() []string` is `Effective.Actions() []security.Action`.
+- `Resolution.Roles []string` is `Resolution.Actions []security.Action`.
+- `(*Resolver).Resolve` answers `[]security.Action`.
+- The minimum Hesape version is now `v0.28.0`.
+
 ## [0.2.3] - 2026-09-06
 
 ### Added

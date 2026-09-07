@@ -48,11 +48,7 @@ var everyAction = []security.Action{
 // carrier is a subject holding every action of this package, which is the most
 // privileged one an application can produce here.
 func carrier() security.Subject {
-	roles := make([]string, 0, len(everyAction))
-	for _, action := range everyAction {
-		roles = append(roles, string(action))
-	}
-	return security.Subject{ID: "user-1", Tenant: "acme", Roles: roles, Verified: true}
+	return security.Subject{ID: "user-1", Tenant: "acme", Actions: everyAction, Verified: true}
 }
 
 // bare is a subject that has been through the middleware and came back with
@@ -161,7 +157,7 @@ func TestNobodyGrantsAnActionTheyDoNotHold(t *testing.T) {
 
 	// Holding it is the whole difference.
 	holder := actor
-	holder.Roles = append(append([]string(nil), actor.Roles...), "invoice.delete")
+	holder.Actions = append(append([]security.Action(nil), actor.Actions...), "invoice.delete")
 	if err := (permission.ActionPolicy{}).Can(context.Background(), holder, permission.PermissionGrant, link); err != nil {
 		t.Fatalf("a subject that holds the action was refused: %v", err)
 	}

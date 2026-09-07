@@ -418,11 +418,11 @@ func (m *Module) actorOf(ctx context.Context, o *console.IO, tenant string) (sec
 		return subject, fmt.Errorf("permission: --as is required: a command acts as somebody, and what they may do is read out of the database")
 	}
 
-	roles, err := m.roles.Resolve(ctx, subject)
+	actions, err := m.roles.Resolve(ctx, subject)
 	if err != nil {
 		return security.Subject{}, err
 	}
-	subject.Roles = roles
+	subject.Actions = actions
 	return subject, nil
 }
 

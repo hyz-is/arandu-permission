@@ -57,12 +57,33 @@ type Domain struct {
 // empty can never grant anything and would say so one screen at a time instead
 // of once, here.
 //
-// Repeats are not an error. The same action reaching it twice is what happens
-// when an application splices several lists together, and refusing that would
-// make the caller deduplicate a set this function returns deduplicated anyway.
+// A repeat inside the application's own list is not an error. The same action
+// reaching it twice is what happens when an application splices several of its
+// own lists together, and refusing that would make the caller deduplicate a set
+// this function returns deduplicated anyway.
+//
+// # An action this package also declares is a different matter
+//
+// The instruction is to splice: Actions: append(myapp.Actions(), permission.Actions()...).
+// So one of this package's actions appearing twice means the application
+// declared the same slug -- and the two are not the same authorization. This
+// package's permission.create opens the screen that administers groups; an
+// application's permission.create governs whatever its own policy governs.
+// Collapsing them silently grants each through the other, so a person given the
+// screen is given the application's write, and the other way round.
+//
+// It is refused, naming the action, because which of the two renames is a
+// decision only whoever wrote both lists can take.
 func NewCatalogue(actions ...security.Action) (Catalogue, error) {
 	if len(actions) == 0 {
 		return Catalogue{}, fmt.Errorf("permission: the catalogue is empty: a group can only carry an action some policy reads, so an empty catalogue is a screen that can grant nothing")
+	}
+
+	// What this package declares, so a repeat of one can be told from a repeat
+	// of the application's own.
+	ours := make(map[security.Action]bool, len(Actions()))
+	for _, action := range Actions() {
+		ours[action] = true
 	}
 
 	member := make(map[security.Action]bool, len(actions))
@@ -73,6 +94,13 @@ func NewCatalogue(actions ...security.Action) (Catalogue, error) {
 			return Catalogue{}, err
 		}
 		if member[action] {
+			if ours[action] {
+				return Catalogue{}, fmt.Errorf(
+					"permission: %q is declared by this package and by the application: "+
+						"this package's governs the screen that administers permission groups, and the application's governs whatever its own policy reads. "+
+						"Granting one would grant the other. Rename one of them -- which one is a decision only whoever wrote both lists can take",
+					action)
+			}
 			continue
 		}
 		member[action] = true

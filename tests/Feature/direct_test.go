@@ -126,7 +126,7 @@ func TestADirectGrantOfOneTenantIsInvisibleToAnother(t *testing.T) {
 		t.Fatalf("resolving in globex: %v", err)
 	}
 	if len(effective.Grants) != 0 {
-		t.Errorf("globex resolves %v of acme's rows", effective.Roles())
+		t.Errorf("globex resolves %v of acme's rows", effective.Actions())
 	}
 }
 
@@ -146,8 +146,8 @@ func TestADirectGrantReachesTheResolvedSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolving: %v", err)
 	}
-	if len(resolved.Roles) != 1 || resolved.Roles[0] != "invoice.delete" {
-		t.Fatalf("carol resolves to %v, want invoice.delete", resolved.Roles)
+	if len(resolved.Actions) != 1 || resolved.Actions[0] != "invoice.delete" {
+		t.Fatalf("carol resolves to %v, want invoice.delete", resolved.Actions)
 	}
 	if len(resolved.Groups) != 0 {
 		t.Errorf("carol is in %v, and was put in no group", resolved.Groups)
@@ -202,8 +202,8 @@ func TestAGroupAndADirectGrantOfTheSameActionBothShow(t *testing.T) {
 	if len(grant.Groups) != 1 || grant.Groups[0].Slug != "billing" {
 		t.Errorf("the grant names %v as its groups, want billing", grant.Groups)
 	}
-	if len(effective.Roles()) != 1 {
-		t.Errorf("dave resolves to %v, want one entry per distinct action", effective.Roles())
+	if len(effective.Actions()) != 1 {
+		t.Errorf("dave resolves to %v, want one entry per distinct action", effective.Actions())
 	}
 }
 
@@ -233,8 +233,8 @@ func TestARevokedDirectGrantIsNotServedFromTheResolver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolving: %v", err)
 	}
-	if len(resolved.Roles) != 1 {
-		t.Fatalf("erin resolves to %v before the revocation", resolved.Roles)
+	if len(resolved.Actions) != 1 {
+		t.Fatalf("erin resolves to %v before the revocation", resolved.Actions)
 	}
 
 	if _, err := svc.SetDirectActions(ctx, actor, "erin", nil); err != nil {
@@ -252,8 +252,8 @@ func TestARevokedDirectGrantIsNotServedFromTheResolver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolving after the revocation: %v", err)
 	}
-	if len(resolved.Roles) != 0 {
-		t.Errorf("erin still resolves to %v", resolved.Roles)
+	if len(resolved.Actions) != 0 {
+		t.Errorf("erin still resolves to %v", resolved.Actions)
 	}
 }
 

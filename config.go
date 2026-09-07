@@ -55,8 +55,14 @@ type Config struct {
 	//
 	//	Actions: append(myapp.Actions(), permission.Actions()...)
 	//
-	// Repeats cost nothing. What is not in it cannot be attached to a group,
-	// which is the whole of why a screen cannot invent a permission.
+	// Repeating one of the application's own actions costs nothing. Declaring
+	// one of THIS package's is refused, because the two would not be the same
+	// authorization: this package's permission.create opens the screen that
+	// administers groups, and an application's governs whatever its own policy
+	// governs. Collapsing them grants each through the other.
+	//
+	// What is not in it cannot be attached to a group, which is the whole of
+	// why a screen cannot invent a permission.
 	Actions []security.Action
 
 	// Prefix is the path the routes are mounted under. Empty means

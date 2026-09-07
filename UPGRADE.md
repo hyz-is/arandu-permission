@@ -4,6 +4,76 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
+## v0.3.0
+
+### Read the permissions from `Actions`, and leave `Roles` meaning role
+
+This is the release to take before wiring the module into an application that
+decides by role, and it is why the previous ones could not be.
+
+The middleware wrote the resolved actions into `Subject.Roles`, because that was
+the only list `auth.Subject` had. From the moment it ran, every policy asking
+`HasRole("admin")` answered false -- silently, since both sides were `[]string`.
+
+Hesape `v0.28.0` adds a second list, and this fills that one:
+
+```go
+// Before: the middleware overwrote this, and HasRole stopped meaning role.
+subject.Roles = []string{"user.view", "invoice.create"}
+
+// After: roles are the application's, actions are the module's.
+subject.Roles   = []string{"admin"}          // untouched by this module
+subject.Actions = []security.Action{"user.view", "invoice.create"}
+```
+
+An application that decides by role needs **no change** and keeps working with
+the module mounted. One that decides by action asks `subject.Can(action)`.
+
+**An application that was reading actions out of `Roles` has to change**, and
+this is the only thing that breaks:
+
+```go
+// Before.
+if subject.HasRole("invoice.create") { ... }
+
+// After.
+if subject.Can(permission.ActionInvoiceCreate) { ... }
+```
+
+Three exported names changed with it. All three carried the flat list of
+actions, and all three were called Roles:
+
+| before | after |
+| --- | --- |
+| `Effective.Roles() []string` | `Effective.Actions() []security.Action` |
+| `Resolution.Roles []string` | `Resolution.Actions []security.Action` |
+| `(*Resolver).Resolve(...) ([]string, error)` | `(...) ([]security.Action, error)` |
+
+### Check your catalogue for a slug this package also declares
+
+`NewCatalogue` refuses an action declared by both. It used to collapse them,
+which granted each through the other: somebody given the screen that
+administers groups was given the application's `permission.create` as well.
+
+```
+permission: "permission.create" is declared by this package and by the
+application: ... Rename one of them
+```
+
+If your application has its own `permissions` table with `permission.view`,
+`permission.create`, `permission.update` or `permission.delete`, boot will now
+refuse rather than quietly merge them. Rename yours, or rename nothing and take
+this package's screen out -- but the choice is now yours to make rather than
+one made for you.
+
+A repeat of your own action across your own lists is still free.
+
+### Upgrade the floor
+
+```sh
+go get github.com/arandu-io/hesape@v0.28.0
+```
+
 ## v0.2.3
 
 Nothing to change. `v0.2.1` and `v0.2.2` had no entry in either release file;
