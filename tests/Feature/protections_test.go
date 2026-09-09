@@ -90,13 +90,9 @@ func service(t *testing.T) *permission.PermissionService {
 // It is how the first group of an installation is created, and it is the only
 // place a subject's actions come from anywhere but the resolution -- because
 // until the first group exists there is nothing to resolve.
-func operator(tenant string, extra ...string) security.Subject {
-	roles := make([]string, 0, len(permission.Actions())+len(extra))
-	for _, action := range permission.Actions() {
-		roles = append(roles, string(action))
-	}
-	roles = append(roles, extra...)
-	return security.Subject{ID: "seed", Tenant: tenant, Roles: roles, Verified: true}
+func operator(tenant string, extra ...security.Action) security.Subject {
+	actions := append(permission.Actions(), extra...)
+	return security.Subject{ID: "seed", Tenant: tenant, Actions: actions, Verified: true}
 }
 
 // seed creates one group and returns it.
@@ -636,9 +632,9 @@ func requestAs(t *testing.T, router *fhttp.Router, cookie, method, target, body 
 }
 
 // holds reports whether a resolution carries an action.
-func holds(roles []string, action string) bool {
-	for _, role := range roles {
-		if role == action {
+func holds(actions []security.Action, action security.Action) bool {
+	for _, have := range actions {
+		if have == action {
 			return true
 		}
 	}

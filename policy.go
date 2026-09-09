@@ -112,7 +112,7 @@ func (GroupPolicy) Can(_ context.Context, s security.Subject, a security.Action,
 		return fmt.Errorf("%s is not open on a system group", a)
 	}
 
-	if !s.HasRole(string(a)) {
+	if !s.Can(a) {
 		return fmt.Errorf("no group of this subject carries %s", a)
 	}
 	return nil
@@ -134,14 +134,14 @@ func (ActionPolicy) Can(_ context.Context, s security.Subject, a security.Action
 	if record.TenantID != "" && record.TenantID != s.Tenant {
 		return fmt.Errorf("the group belongs to another tenant")
 	}
-	if !s.HasRole(string(a)) {
+	if !s.Can(a) {
 		return fmt.Errorf("no group of this subject carries %s", a)
 	}
 
 	// Granting is bounded by what the subject already holds. Detaching is not:
 	// taking a permission away is never an escalation, and requiring the
 	// permission in order to remove it would leave a mistake nobody can undo.
-	if a == PermissionGrant && !s.HasRole(record.Action) {
+	if a == PermissionGrant && !s.Can(security.Action(record.Action)) {
 		return fmt.Errorf("%s cannot be granted by a subject that does not hold it", record.Action)
 	}
 	return nil
@@ -176,7 +176,7 @@ func (MembershipPolicy) Can(_ context.Context, s security.Subject, a security.Ac
 		return fmt.Errorf("%s answers about the subject asking and nobody else", a)
 	}
 
-	if !s.HasRole(string(a)) {
+	if !s.Can(a) {
 		return fmt.Errorf("no group of this subject carries %s", a)
 	}
 	if a == PermissionAssign && record.UserID == s.ID {
@@ -220,7 +220,7 @@ func (UserActionPolicy) Can(_ context.Context, s security.Subject, a security.Ac
 		return fmt.Errorf("%s answers about the subject asking and nobody else", a)
 	}
 
-	if !s.HasRole(string(a)) {
+	if !s.Can(a) {
 		return fmt.Errorf("no group of this subject carries %s", a)
 	}
 
@@ -228,7 +228,7 @@ func (UserActionPolicy) Can(_ context.Context, s security.Subject, a security.Ac
 		if record.UserID == s.ID {
 			return fmt.Errorf("%s does not give the subject a permission", a)
 		}
-		if !s.HasRole(record.Action) {
+		if !s.Can(security.Action(record.Action)) {
 			return fmt.Errorf("%s cannot be granted by a subject that does not hold it", record.Action)
 		}
 	}

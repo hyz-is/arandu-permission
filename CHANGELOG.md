@@ -10,6 +10,81 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-07
+
+### Fixed
+
+- The resolved permissions go into `Subject.Actions`, not `Subject.Roles`. A
+  role is what somebody is; an action is what they may do. This package wrote
+  the flat list of actions into `Roles` because that was the only field
+  `auth.Subject` had -- and from the moment its middleware ran, every policy in
+  the application asking `HasRole("admin")` answered false. Both sides were
+  `[]string`, so nothing in the build said a word, and what the application saw
+  was administrators losing everything. Reported by the Corujão.ai team against
+  144 `HasRole` calls in 30 policies. Hesape `v0.28.0` adds `Subject.Actions`
+  and `Subject.Can`; this fills the first and asks the second.
+- An action declared by both this package and the application is refused rather
+  than deduplicated. The guide says to splice the two lists, so a repeat of one
+  of this package's actions means the application chose the same slug -- and the
+  two are not the same authorization: this package's `permission.create` opens
+  the screen that administers groups, and an application's governs whatever its
+  own policy reads. They collapsed into one entry, silently, and granting either
+  granted both. `NewCatalogue` now names the action and says that renaming one
+  is a decision only whoever wrote both lists can take. A repeat of the
+  application's own action is still free.
+
+### Changed
+
+- `Effective.Roles() []string` is `Effective.Actions() []security.Action`.
+- `Resolution.Roles []string` is `Resolution.Actions []security.Action`.
+- `(*Resolver).Resolve` answers `[]security.Action`.
+- The minimum Hesape version is now `v0.28.0`.
+
+## [0.2.3] - 2026-09-06
+
+### Added
+
+- Three tests that hold the two release files against the code: an action
+  declared in `policy.go` and a migration declared in `module.go` have to be
+  named under a version heading rather than under `[Unreleased]`, and the two
+  files have to describe the same set of versions.
+
+### Fixed
+
+- `v0.2.1` and `v0.2.2` are recorded. Both went out with no entry in either
+  file, and `currentVersion` in the release test still named `0.2.0`, so the
+  test that exists to hold the two files to the release being prepared was
+  holding them to a release two tags old.
+
+## [0.2.2] - 2026-09-05
+
+### Fixed
+
+- The archive carries the view sources rather than what the compiler writes
+  beside them. The view compiler decides by the existence of `resources/views`:
+  without it, it treats the module as a component library and writes the
+  compiled Go next to the source, so running the build the guides ask for put
+  compiled views into the archive -- published over a page the project had
+  already generated. The embed pattern names the extension now, and the output
+  is ignored.
+
+## [0.2.1] - 2026-09-05
+
+### Fixed
+
+- The published module carries its view sources. They were kept at
+  `resources/views/vendor/permission/`, which is the address an application
+  looks for them at, and `go mod` drops every path with a segment named
+  `vendor` when it packs a module, at any depth -- so the files were in the
+  repository and absent from what anybody downloads, and an import failed on the
+  embed on a tree where every gate here was green. The archive keeps them under
+  `resources/publish/` and the publication carries where they come from and
+  where they go, so they still land at the same addresses.
+
+### Added
+
+- A gate that refuses a published view no handler draws.
+
 ## [0.2.0] - 2026-09-05
 
 Parity with what the reference administers, ported as effect rather than as
@@ -94,7 +169,16 @@ The first release. It administers who may do what, and decides nothing.
 - `GroupPolicy`, `ActionPolicy` and `MembershipPolicy`. Each answers about one
   entity, and between them they hold the three refusals that matter: a record of
   another tenant, granting an action the subject does not hold, and putting
-  oneself into a group.
+  oneself into a group. The actions they answer about are `PermissionView`,
+  `PermissionList`, `PermissionCreate`, `PermissionUpdate`, `PermissionDelete`,
+  `PermissionGrant`, `PermissionRevoke`, `PermissionAssign`,
+  `PermissionUnassign`, `PermissionGrantDirect`, `PermissionRevokeDirect` and
+  `PermissionResolve`. Administering a permission is split from holding it:
+  somebody who may list groups is not thereby somebody who may grant an action
+  to one, and granting an action to a person directly is a separate decision
+  from granting it to a group they belong to.
+- `20260905_0001_create_permission_tables` and
+  `20260905_0002_create_permission_user_actions`.
 - `PermissionService`, the one owner of the database handle. Every use case
   authorizes before it reaches a model, and the tenant of every row it writes
   comes from the Grant.

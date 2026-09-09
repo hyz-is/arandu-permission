@@ -304,12 +304,18 @@ type Effective struct {
 	Direct []security.Action
 }
 
-// Roles is the flat list an authorization decision reads: one entry per
+// Actions is the flat list an authorization decision reads: one entry per
 // distinct action, sorted.
-func (e Effective) Roles() []string {
-	out := make([]string, 0, len(e.Grants))
+//
+// It was called Roles and answered []string, because auth.Subject had one list
+// of strings and Roles was its name. Writing actions into that field made
+// HasRole answer about them -- so every policy in a consuming application that
+// asked HasRole("admin") began answering false, silently, since both sides were
+// []string. Subject carries Actions now, typed, and this is what fills it.
+func (e Effective) Actions() []security.Action {
+	out := make([]security.Action, 0, len(e.Grants))
 	for _, grant := range e.Grants {
-		out = append(out, string(grant.Action))
+		out = append(out, grant.Action)
 	}
 	return out
 }

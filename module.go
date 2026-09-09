@@ -69,22 +69,22 @@ import (
 // the module refusing to boot.
 const (
 	// ViewGroupsIndex is the listing, with its search and its pages.
-	ViewGroupsIndex = "vendor.permission.groups.index"
+	ViewGroupsIndex = "modules.permission.groups.index"
 	// ViewGroupsShow is one group: what it carries and who is in it.
-	ViewGroupsShow = "vendor.permission.groups.show"
+	ViewGroupsShow = "modules.permission.groups.show"
 	// ViewCatalogue is every action the application declares, by domain.
-	ViewCatalogue = "vendor.permission.catalogue.index"
+	ViewCatalogue = "modules.permission.catalogue.index"
 	// ViewMatrix is the grid of groups against actions.
-	ViewMatrix = "vendor.permission.matrix.index"
+	ViewMatrix = "modules.permission.matrix.index"
 	// ViewSummary is the fragment that says what a bulk write would change,
 	// before it is applied.
-	ViewSummary = "vendor.permission.matrix.summary"
+	ViewSummary = "modules.permission.matrix.summary"
 	// ViewMember is one person's effective permissions and where each comes
 	// from.
-	ViewMember = "vendor.permission.users.show"
+	ViewMember = "modules.permission.users.show"
 	// ViewMembers is the listing of everybody this module has written a row
 	// about.
-	ViewMembers = "vendor.permission.users.index"
+	ViewMembers = "modules.permission.users.index"
 )
 
 // Module is what the application registers.

@@ -1,8 +1,139 @@
 # Upgrade Guide
 
+## Unreleased
+
+### Published views move out of `vendor/`
+
+The views this package publishes land in `resources/views/modules/permission/` and
+compile to `storage/framework/views/modules/permission`. It used to be `vendor/` in
+both, and that address could not work: the go command refuses to import a
+package whose path carries a `vendor` element —
+
+```
+bootstrap/app.go:98:2: use of vendored package not allowed
+```
+
+— and a published view is compiled into a Go package the application has to
+import for its `init()` to register anything. So the last step of the install,
+the import `(*Module).Boot` asks for, did not build.
+
+The archive was already under `resources/publish`, which is what keeps the files
+in the module zip: a file under a directory named `vendor` is dropped from it at
+any depth. That fixed the source side and left the destination carrying the
+word, and the destination is the address the application looks the views up at.
+
+The view name constants moved with it: `vendor.permission.groups.index` is now `modules.permission.groups.index`.
+The constant names are unchanged, so code that renders through them keeps
+compiling.
+
+**A project that already published the old tree** publishes again and removes
+the old one by hand:
+
+```sh
+aru vendor:publish --tag=view --apply
+aru view:build
+rm -rf resources/views/vendor/permission storage/framework/views/vendor/permission
+```
+
+then deletes the old lines from `vendor-publish.lock` and changes the import in
+`bootstrap/app.go` from `storage/framework/views/vendor/permission` to
+`storage/framework/views/modules/permission`.
+
+Framework `v0.46.4` and Hesape `v0.37.0` refuse a publication that carries the
+reserved name, so this cannot come back quietly.
+
 Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
+
+## v0.3.0
+
+### Read the permissions from `Actions`, and leave `Roles` meaning role
+
+This is the release to take before wiring the module into an application that
+decides by role, and it is why the previous ones could not be.
+
+The middleware wrote the resolved actions into `Subject.Roles`, because that was
+the only list `auth.Subject` had. From the moment it ran, every policy asking
+`HasRole("admin")` answered false -- silently, since both sides were `[]string`.
+
+Hesape `v0.28.0` adds a second list, and this fills that one:
+
+```go
+// Before: the middleware overwrote this, and HasRole stopped meaning role.
+subject.Roles = []string{"user.view", "invoice.create"}
+
+// After: roles are the application's, actions are the module's.
+subject.Roles   = []string{"admin"}          // untouched by this module
+subject.Actions = []security.Action{"user.view", "invoice.create"}
+```
+
+An application that decides by role needs **no change** and keeps working with
+the module mounted. One that decides by action asks `subject.Can(action)`.
+
+**An application that was reading actions out of `Roles` has to change**, and
+this is the only thing that breaks:
+
+```go
+// Before.
+if subject.HasRole("invoice.create") { ... }
+
+// After.
+if subject.Can(permission.ActionInvoiceCreate) { ... }
+```
+
+Three exported names changed with it. All three carried the flat list of
+actions, and all three were called Roles:
+
+| before | after |
+| --- | --- |
+| `Effective.Roles() []string` | `Effective.Actions() []security.Action` |
+| `Resolution.Roles []string` | `Resolution.Actions []security.Action` |
+| `(*Resolver).Resolve(...) ([]string, error)` | `(...) ([]security.Action, error)` |
+
+### Check your catalogue for a slug this package also declares
+
+`NewCatalogue` refuses an action declared by both. It used to collapse them,
+which granted each through the other: somebody given the screen that
+administers groups was given the application's `permission.create` as well.
+
+```
+permission: "permission.create" is declared by this package and by the
+application: ... Rename one of them
+```
+
+If your application has its own `permissions` table with `permission.view`,
+`permission.create`, `permission.update` or `permission.delete`, boot will now
+refuse rather than quietly merge them. Rename yours, or rename nothing and take
+this package's screen out -- but the choice is now yours to make rather than
+one made for you.
+
+A repeat of your own action across your own lists is still free.
+
+### Upgrade the floor
+
+```sh
+go get github.com/arandu-io/hesape@v0.28.0
+```
+
+## v0.2.3
+
+Nothing to change. `v0.2.1` and `v0.2.2` had no entry in either release file;
+they are recorded now, and three tests hold an action or a migration this
+package declares to a version heading rather than to `[Unreleased]`.
+
+## v0.2.2
+
+Reinstall, and rebuild the views. The published `v0.2.1` archive carried what
+the view compiler writes beside the sources rather than the sources. Run
+`aru vendor:publish --tag=view --apply` and `aru view:build` after upgrading.
+
+## v0.2.1
+
+Nothing to change, and everything to reinstall. The published `v0.2.0` archive
+was missing its view sources -- `go mod` drops every path with a segment named
+`vendor` when it packs a module. The files land at the same addresses under the
+same view names; what changed is where the archive carries them.
 
 ## v0.2.0
 

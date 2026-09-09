@@ -62,7 +62,7 @@ func TestRequireRefusesAVisitorWithNoSubject(t *testing.T) {
 func TestRequireRefusesASubjectCarryingSomethingElse(t *testing.T) {
 	t.Parallel()
 
-	subject := security.Subject{ID: "kim", Tenant: "acme", Roles: []string{"invoice.delete"}}
+	subject := security.Subject{ID: "kim", Tenant: "acme", Actions: []security.Action{"invoice.delete"}}
 	if got := guarded(t, &subject, permission.PermissionList); got != http.StatusForbidden {
 		t.Errorf("a subject carrying something else = %d, want %d", got, http.StatusForbidden)
 	}
@@ -73,7 +73,7 @@ func TestRequireRefusesASubjectCarryingSomethingElse(t *testing.T) {
 func TestRequireAdmitsASubjectCarryingAnyOfThem(t *testing.T) {
 	t.Parallel()
 
-	subject := security.Subject{ID: "kim", Tenant: "acme", Roles: []string{"invoice.delete"}}
+	subject := security.Subject{ID: "kim", Tenant: "acme", Actions: []security.Action{"invoice.delete"}}
 	got := guarded(t, &subject, permission.PermissionList, "invoice.delete")
 	if got != http.StatusNoContent {
 		t.Errorf("a subject carrying the second of two = %d, want %d", got, http.StatusNoContent)
@@ -85,7 +85,7 @@ func TestRequireAdmitsASubjectCarryingAnyOfThem(t *testing.T) {
 func TestRequireWithNoActionRefusesEverybody(t *testing.T) {
 	t.Parallel()
 
-	subject := security.Subject{ID: "kim", Tenant: "acme", Roles: []string{"invoice.delete"}}
+	subject := security.Subject{ID: "kim", Tenant: "acme", Actions: []security.Action{"invoice.delete"}}
 	if got := guarded(t, &subject); got != http.StatusForbidden {
 		t.Errorf("a guard naming no action = %d, want %d", got, http.StatusForbidden)
 	}
