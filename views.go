@@ -42,7 +42,14 @@ const (
 	// viewPrefix is where the same files are written in a project, which is the
 	// address an application looks for a package's views at. It is what a view
 	// name is derived from, and what Boot holds the archive to.
-	viewPrefix = "resources/views/vendor/permission"
+	//
+	// It is not named vendor either, and for the other of the two rules: a
+	// package whose import path carries that element cannot be imported at all
+	// -- "use of vendored package not allowed". A published view is compiled
+	// into a Go package the application has to import for its init() to
+	// register anything, so the destination is the half that moving the archive
+	// could not fix.
+	viewPrefix = "resources/views/modules/permission"
 	viewSuffix = ".kyse.go"
 )
 
@@ -157,7 +164,7 @@ func readArchive() (paths, names []string) {
 
 // publishedPath turns an archive path into the path the file is written at.
 //
-//	resources/publish/groups/index.kyse.go -> resources/views/vendor/permission/groups/index.kyse.go
+//	resources/publish/groups/index.kyse.go -> resources/views/modules/permission/groups/index.kyse.go
 func publishedPath(path string) string {
 	return viewPrefix + strings.TrimPrefix(path, viewRoot)
 }
