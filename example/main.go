@@ -136,7 +136,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("  alice carries %d permission(s), read out of the rows above\n", len(alice.Roles))
+	fmt.Printf("  alice carries %d permission(s), read out of the rows above\n", len(alice.Actions))
 
 	say("selector", "naming many permissions at once, bounded by the catalogue")
 	editors, err := svc.CreateGroup(ctx, alice, permission.CreateGroupRequest{
@@ -199,7 +199,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("  carol now carries %v\n", carol.Roles)
+	fmt.Printf("  carol now carries %v\n", carol.Actions)
 
 	say("labels", "the identifier is stored, the sentence is resolved when drawn")
 	labels := module.Labels("pt-BR")
@@ -217,7 +217,12 @@ func resolve(ctx context.Context, svc *permission.PermissionService, id string) 
 	if err != nil {
 		return security.Subject{}, err
 	}
-	subject.Roles = resolved.Roles
+	// Actions and not Roles. Roles are names an application chose and this
+	// package never validates -- a permission written into that list is a
+	// permission HasRole answers about, and every policy asking
+	// HasRole("admin") starts answering false. What is administered here is a
+	// set of actions, and Can is the question it answers.
+	subject.Actions = resolved.Actions
 	return subject, nil
 }
 
