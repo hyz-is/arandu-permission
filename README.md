@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/logo.svg" alt="Arandu" width="180">
+</p>
+
 # Arandu Permission
 
 It administers who may do what, and decides nothing.
