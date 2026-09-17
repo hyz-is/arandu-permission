@@ -10,6 +10,14 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-17
+
+### Fixed
+
+- Pin Framework v0.47.1, Hesape v0.41.1 and Kyse v0.29.1 so consumers receive the corrected native UI initialization.
+- Run the existing CI checks on develop before promoting to main.
+- Keep the package APIs, authorization decisions and tenant isolation unchanged.
+
 ## [0.3.0] - 2026-09-07
 
 ### Fixed

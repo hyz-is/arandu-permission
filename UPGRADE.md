@@ -57,6 +57,10 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
+## v0.4.1
+
+No package API, route or migration changes. Update the module normally to select Framework v0.47.1, Hesape v0.41.1 and Kyse v0.29.1. Existing authorization and tenant policies are unchanged. Application-owned published views are not overwritten by this dependency update.
+
 ## v0.3.0
 
 ### Read the permissions from `Actions`, and leave `Roles` meaning role
