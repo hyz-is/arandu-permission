@@ -57,6 +57,16 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
+## v0.4.2
+
+No package API, route or migration changes. Existing applications keep their published views, by design. To adopt the native DataTable matrix and responsive permission-page containers, preview and apply the view publication again, review any reported conflicts, then rebuild the views:
+
+    aru vendor:publish --tag=view
+    aru vendor:publish --tag=view --apply
+    aru view:build
+
+Application-specific action names remain application translations; pass them through Config.Translator. The module now ships the control.columns label in English and Brazilian Portuguese.
+
 ## v0.4.1
 
 No package API, route or migration changes. Update the module normally to select Framework v0.47.1, Hesape v0.41.1 and Kyse v0.29.1. Existing authorization and tenant policies are unchanged. Application-owned published views are not overwritten by this dependency update.

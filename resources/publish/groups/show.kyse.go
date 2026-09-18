@@ -19,6 +19,7 @@ type ShowData = permission.GroupPageData
 @extends('layouts.app')
 
 @section('content')
+	<section class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 	<div class="flex items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{{ .Group.Name }}</h1>
@@ -186,4 +187,5 @@ type ShowData = permission.GroupPageData
 			</form>
 		</section>
 	@endif
+	</section>
 @endsection

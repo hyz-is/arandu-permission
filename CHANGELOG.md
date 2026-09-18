@@ -10,6 +10,15 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-18
+
+### Fixed
+
+- Render the permissions matrix through the native Kyse DataTable instead of a hand-written HTML table.
+- Make permission administration pages use a bounded responsive content container rather than stretching against the viewport edges.
+- Add localized labels for the native matrix column chooser; application-owned action labels remain overridable through Config.Translator.
+
+
 ## [0.4.1] - 2026-09-17
 
 ### Fixed

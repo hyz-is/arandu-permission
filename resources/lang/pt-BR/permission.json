@@ -24,7 +24,8 @@
         "review": "Revisar alterações",
         "apply": "Aplicar esta alteração",
         "next_page": "Próxima página",
-        "search_placeholder": "identificador ou nome"
+        "search_placeholder": "identificador ou nome",
+        "columns": "Colunas"
     },
     "groups": {
         "title": "Grupos",

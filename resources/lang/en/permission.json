@@ -24,7 +24,8 @@
         "review": "Review changes",
         "apply": "Apply this change",
         "next_page": "Next page",
-        "search_placeholder": "slug or name"
+        "search_placeholder": "slug or name",
+        "columns": "Columns"
     },
     "groups": {
         "title": "Groups",

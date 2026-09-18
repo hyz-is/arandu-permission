@@ -21,6 +21,7 @@ type IndexData = permission.GroupsPageData
 @extends('layouts.app')
 
 @section('content')
+	<section class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 	<div class="flex items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("groups.title") }}</h1>
@@ -109,5 +110,6 @@ type IndexData = permission.GroupsPageData
 			</div>
 			{!! components.Button(components.ButtonProps{Label: .Labels.T("control.create_group"), Type: "submit"}) !!}
 		</form>
+	</section>
 	</section>
 @endsection
