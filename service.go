@@ -889,6 +889,20 @@ func (s *PermissionService) ListMembers(ctx context.Context, actor security.Subj
 	if err != nil {
 		return MemberPage{}, err
 	}
+	return s.listMembers(ctx, g, q, "")
+}
+
+// searchMembers is the panel's search-aware variant. It remains private so
+// adding search to the screen does not widen or break the package API.
+func (s *PermissionService) searchMembers(ctx context.Context, actor security.Subject, q MemberQuery, search string) (MemberPage, error) {
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionList, Group{})
+	if err != nil {
+		return MemberPage{}, err
+	}
+	return s.listMembers(ctx, g, q, search)
+}
+
+func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q MemberQuery, search string) (MemberPage, error) {
 
 	limit := q.Limit
 	switch {
@@ -919,6 +933,9 @@ func (s *PermissionService) ListMembers(ctx context.Context, actor security.Subj
 	if restrict != "" {
 		memberships = memberships.Where("group_id", "=", restrict)
 	}
+	if search := strings.TrimSpace(search); search != "" {
+		memberships.GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
+	}
 	if q.Cursor != "" {
 		memberships = memberships.Where("user_id", ">", q.Cursor)
 	}
@@ -946,6 +963,9 @@ func (s *PermissionService) ListMembers(ctx context.Context, actor security.Subj
 	// page, whatever else they carry.
 	if restrict == "" {
 		own := UserActions(s.db).NewQuery()
+		if search := strings.TrimSpace(search); search != "" {
+			own.GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
+		}
 		if q.Cursor != "" {
 			own = own.Where("user_id", ">", q.Cursor)
 		}

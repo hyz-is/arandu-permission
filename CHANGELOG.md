@@ -14,7 +14,9 @@ a release is corrected by another release and never by moving a tag.
 
 ### Fixed
 
-- Render the permissions matrix through the native Kyse DataTable instead of a hand-written HTML table.
+- Render both the permissions matrix and the permission-member listing through the native Kyse DataTable instead of hand-written HTML tables.
+- Search permission members by identifier inside the module QueryBuilder while preserving cursor pagination across group memberships and direct grants.
+- Consume Kyse v0.29.4 so DataTable search and facets share one native GET form, preserve caller query parameters and work without JavaScript.
 - Make permission administration pages use a bounded responsive content container rather than stretching against the viewport edges.
 - Add localized labels for the native matrix column chooser; application-owned action labels remain overridable through Config.Translator.
 

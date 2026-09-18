@@ -435,6 +435,8 @@ type MembersPageData struct {
 
 	Prefix string
 	Labels Labels
+	// Search is the identifier search echoed into the query control.
+	Search string
 	// Group is the slug the listing was narrowed by, echoed back so the control
 	// still says what is being looked at.
 	Group string
@@ -666,13 +668,14 @@ func (m *Module) matrix(ctx *fhttp.Context) error {
 // members answers a page of the people this module has written a row about.
 func (m *Module) members(ctx *fhttp.Context) error {
 	actor := m.subject(ctx.Request)
+	search := strings.TrimSpace(ctx.Query("q"))
 	slug := ctx.Query("group")
 
-	page, err := m.svc.ListMembers(ctx.Ctx(), actor, MemberQuery{
+	page, err := m.svc.searchMembers(ctx.Ctx(), actor, MemberQuery{
 		Group:  slug,
 		Cursor: ctx.Query("cursor"),
 		Limit:  m.cfg.PageSize,
-	})
+	}, search)
 	if err != nil {
 		return m.answer(ctx, err)
 	}
@@ -686,6 +689,7 @@ func (m *Module) members(ctx *fhttp.Context) error {
 		Page:    m.page(ctx, labels.T("members.title")),
 		Prefix:  m.cfg.Prefix,
 		Labels:  labels,
+		Search:  search,
 		Group:   slug,
 		Groups:  groups.Items,
 		Members: page.Items,

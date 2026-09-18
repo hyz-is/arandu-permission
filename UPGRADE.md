@@ -59,13 +59,13 @@ named on this page.
 
 ## v0.4.2
 
-No package API, route or migration changes. Existing applications keep their published views, by design. To adopt the native DataTable matrix and responsive permission-page containers, preview and apply the view publication again, review any reported conflicts, then rebuild the views:
+No package API, route or migration changes. Existing applications keep their published views, by design. To adopt the native DataTable matrix, the DataTable permission-member listing, identifier search and responsive permission-page containers, preview and apply the view publication again, review any reported conflicts, then rebuild the views:
 
     aru vendor:publish --tag=view
     aru vendor:publish --tag=view --apply
     aru view:build
 
-Application-specific action names remain application translations; pass them through Config.Translator. The module now ships the control.columns label in English and Brazilian Portuguese.
+Application-specific action names remain application translations; pass them through Config.Translator. The module now ships the control.columns label in English and Brazilian Portuguese. The release selects Kyse v0.29.4, whose DataTable keeps search, facets, sort and caller-owned URL parameters together in the native/HTMX query path.
 
 ## v0.4.1
 
