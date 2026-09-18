@@ -57,6 +57,14 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
+## v0.4.3
+
+No API, route or migration changes. Republish the permission views so the members group filter uses the native Kyse Select component and no longer carries a template directive inside an HTML attribute:
+
+    aru vendor:publish --tag=view
+    aru vendor:publish --tag=view --apply
+    aru view:build
+
 ## v0.4.2
 
 No package API, route or migration changes. Existing applications keep their published views, by design. To adopt the native DataTable matrix, the DataTable permission-member listing, identifier search and responsive permission-page containers, preview and apply the view publication again, review any reported conflicts, then rebuild the views:

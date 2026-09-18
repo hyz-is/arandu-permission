@@ -37,7 +37,8 @@ func TestMembersPublicationUsesNativeDataTableInsteadOfRawTable(t *testing.T) {
 		"components.DataTable(membersTable(.))",
 		"ID: \"permission-members\"",
 		"Name: \"q\"",
-		"name=\"group\"",
+		"components.Select(components.SelectProps",
+		"Name: \"group\"",
 	} {
 		if !strings.Contains(source, want) {
 			t.Errorf("members view does not contain %q", want)
@@ -45,5 +46,8 @@ func TestMembersPublicationUsesNativeDataTableInsteadOfRawTable(t *testing.T) {
 	}
 	if strings.Contains(source, "<table") {
 		t.Error("members view bypasses Kyse with a raw HTML table")
+	}
+	if strings.Contains(source, "@if(group.Slug == .Group)") {
+		t.Error("members view embeds a Kyse directive inside an HTML attribute; use the native Select component value instead")
 	}
 }

@@ -10,6 +10,13 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-09-18
+
+### Fixed
+
+- Render the permission-member group filter through the native Kyse Select component instead of placing a template directive inside an HTML option attribute.
+- Keep the published permission views compatible with the strict CSP/client-directive contract used by Arandu applications.
+
 ## [0.4.2] - 2026-09-18
 
 ### Fixed

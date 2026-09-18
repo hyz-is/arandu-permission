@@ -16,6 +16,14 @@ import (
 // IndexData is what the handler hands this page.
 type IndexData = permission.MembersPageData
 
+func groupOptions(groups []permission.GroupRef) []components.SelectOption {
+	options := make([]components.SelectOption, 0, len(groups))
+	for _, group := range groups {
+		options = append(options, components.SelectOption{Value: group.Slug, Label: group.Name})
+	}
+	return options
+}
+
 func membersTable(data IndexData) components.DataTableProps {
 	rows := make([]components.TableRow, 0, len(data.Members))
 	for _, person := range data.Members {
@@ -111,12 +119,10 @@ func membersNextURL(data IndexData) string {
 		</div>
 		<div class="min-w-56">
 			{!! components.Label(components.LabelProps{For: "group", Text: .Labels.T("noun.group_one")}) !!}
-			<select class="input" name="group" id="group">
-				<option value="">{{ .Labels.T("members.all_groups") }}</option>
-				@foreach(.Groups as group)
-					<option value="{{ group.Slug }}" @if(group.Slug == .Group) selected @endif>{{ group.Name }}</option>
-				@endforeach
-			</select>
+			{!! components.Select(components.SelectProps{
+				Name: "group", Value: .Group, Options: groupOptions(.Groups),
+				Placeholder: .Labels.T("members.all_groups"),
+			}) !!}
 		</div>
 		{!! components.Button(components.ButtonProps{Label: .Labels.T("field.search"), Type: "submit", Variant: "outline"}) !!}
 	</form>
