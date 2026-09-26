@@ -3,9 +3,9 @@ module github.com/hyz-is/arandu-permission
 go 1.26
 
 require (
-	github.com/arandu-io/framework v0.47.1
-	github.com/arandu-io/hesape v0.41.3
-	github.com/arandu-io/hesape/database/connectors/sqlite v0.10.1
+	github.com/arandu-io/framework v0.48.0
+	github.com/arandu-io/hesape v0.42.2
+	github.com/arandu-io/hesape/database/connectors/sqlite v0.10.2
 	github.com/arandu-io/kyse v0.29.4
 )
 
