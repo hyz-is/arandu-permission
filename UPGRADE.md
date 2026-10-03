@@ -50,11 +50,11 @@ keeps unexported, and `Exists` and `WasRecentlyCreated` are methods,
 `row.Exists()`. A copied row refuses every write with `model.ErrUnwired`, so keep
 the pointers the queries return.
 
-**Upgrade the floor.** The module requires Hesape `v0.47.0` and Framework
+**Upgrade the floor.** The module requires Hesape `v0.48.0` and Framework
 `v0.50.2`, and `arandu.mod.toml` declares `framework = ">= 0.50"`. An application
-that pins a lower Hesape cannot compile this release: every generic model type
-it would need is gone from Hesape itself. The published views are unchanged and
-need no republish.
+that pins a Hesape below `v0.47.0` cannot compile this release: every generic
+model type it would need is gone from Hesape itself. The published views are
+unchanged and need no republish.
 
 <details>
 <summary>Every incompatible symbol <code>apidiff</code> reports against v0.4.2</summary>

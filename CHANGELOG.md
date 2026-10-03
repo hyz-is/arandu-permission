@@ -24,7 +24,7 @@ a release is corrected by another release and never by moving a tag.
 - **Breaking.** The struct `ListGroups` and `ViewMatrix` take is
   `GroupListQuery`, with the same fields: `GroupQuery` is the generated query on
   the groups table.
-- Require Hesape `v0.47.0`, Framework `v0.50.2` and the SQLite connector
+- Require Hesape `v0.48.0`, Framework `v0.50.2` and the SQLite connector
   `v0.11.0`; `arandu.mod.toml` declares `framework = ">= 0.50"`. Routes,
   migrations, actions, policy decisions and tenant scoping are unchanged.
 
