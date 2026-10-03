@@ -10,6 +10,24 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking.** `Group`, `GroupAction`, `GroupUser`, `UserAction` and `Version`
+  embed the non-generic `model.Model` of Hesape `v0.47.0`, and each table is
+  declared once in `model.go`. The fields and methods `model.Model[T]` promoted
+  onto them are gone; `Exists` and `WasRecentlyCreated` are methods.
+- **Breaking.** `Groups`, `GroupActions`, `GroupUsers`, `UserActions` and
+  `Versions` are generated beside `model.go` and return the concrete
+  `*GroupQuery`, `*GroupActionQuery`, `*GroupUserQuery`, `*UserActionQuery` and
+  `*VersionQuery`, taking a `model.DB`. `Get` returns `GroupCollection` and its
+  siblings, and `New` replaces `NewInstance(nil, false)`.
+- **Breaking.** The struct `ListGroups` and `ViewMatrix` take is
+  `GroupListQuery`, with the same fields: `GroupQuery` is the generated query on
+  the groups table.
+- Require Hesape `v0.47.0`, Framework `v0.50.2` and the SQLite connector
+  `v0.11.0`; `arandu.mod.toml` declares `framework = ">= 0.50"`. Routes,
+  migrations, actions, policy decisions and tenant scoping are unchanged.
+
 ## [0.4.3] - 2026-09-18
 
 ### Fixed
