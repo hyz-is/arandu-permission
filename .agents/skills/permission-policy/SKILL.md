@@ -112,10 +112,10 @@ must see, call `security.Authorize`, and only then call `Groups(s.db)`.
 method and refuses the opposite order; the runtime twin uses a nil database so
 even constructing the Model early fails.
 
-Create builds a wired entity through `NewInstance`, keeps its pointer, writes
-`TenantID` from `data.Tenant(g)`, and calls `Save(ctx, g)`. Find and Get return
-pointers too. Copying an entity with an embedded Model leaves its `Entity`
-pointer aimed at the old allocation.
+Create builds a wired entity through `Groups(s.db).New()`, keeps its pointer,
+writes `TenantID` from `data.Tenant(g)`, and calls `Save(ctx, g)`. Find and Get
+return pointers too. A copied entity is not the row its embedded Model was built
+inside, and its writes refuse with `model.ErrUnwired`.
 
 CRUD does not get a Repository beside this path. A Repository is an optional
 specialization for a genuinely complex query, read model, report, export or raw

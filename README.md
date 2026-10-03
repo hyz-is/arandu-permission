@@ -271,8 +271,9 @@ why, and the token moving on a revocation.
 
 ## Model-first data path
 
-`Group` embeds `model.Model[Group]`, and `Groups(db)` is the one
-configured entry point for its table. `PermissionService` owns `*data.DB` and
+`Group` embeds `model.Model`, `groupTable` in `model.go` configures its table,
+and `Groups(db)`, generated beside it by `aru model:build`, is the one entry
+point for its queries. `PermissionService` owns `*data.DB` and
 follows `validate -> security.Authorize -> Grant -> Model terminal`; handlers
 never hold the database or construct a Model.
 
@@ -281,8 +282,9 @@ before reading and again against the row it found. `ListGroups` authorizes befor
 building its scoped query. The Model keeps its default `tenant_id` scope on every
 terminal.
 
-Terminals return `*Group` and `[]*Group`. Keep those pointers intact: copying an
-embedded Model leaves its `Entity` pointer aimed at the original allocation.
+Terminals return `*Group` and `GroupCollection` (`[]*Group`). Keep those pointers
+intact: a copied row is not the row its embedded Model was built inside, and its
+writes refuse with `model.ErrUnwired`.
 
 There is no CRUD Repository. Add one only for a complex query, read model,
 report, export or raw SQL contract that the common Model path cannot express.
@@ -294,6 +296,7 @@ module.go       registration, routes, handlers and migrations
 config.go       what the application passes in
 catalogue.go    the closed set of actions, and the selectors that name them
 model.go        the entities, and what they may answer with
+*Query.go       the queries aru model:build generates from model.go; never edited
 policy.go       who may do what
 service.go      the rules and authorized Model access
 resolver.go     what a request carries into every policy, and the route guard

@@ -62,7 +62,7 @@ this one must prove about itself it proves in its own suite or nowhere.
 
 | | measured with |
 | --- | --- |
-| 11 Go files, one per role, all in one package at the root | `ls *.go \| wc -l` |
+| 11 Go files, one per role, and 5 generated query files, all in one package at the root | `ls *.go \| grep -vc _test.go` |
 | 16 test files | `find tests -name '*_test.go' \| wc -l` |
 | 14 routes | `grep -c 'guarded.Action' module.go` |
 | 12 actions the policies answer about | `grep -cE '^\t[A-Za-z]+ security.Action = ' policy.go` |
@@ -77,6 +77,7 @@ module.go       registration, routes, handlers and migrations
 config.go       what the application passes in
 catalogue.go    the closed set of actions, and the selectors that name them
 model.go        the entities, and what they may answer with
+*Query.go       the queries aru model:build generates from model.go; never edited
 policy.go       who may do what
 service.go      the rules and authorized Model access
 resolver.go     what a request carries into every policy, and the route guard
@@ -86,17 +87,20 @@ command.go      the same use cases, from a terminal
 views.go        the files the application takes ownership of
 ```
 
-`Groups(db)` configures the table, string primary key and default `tenant_id`
-scope, and `GroupActions`, `GroupUsers`, `UserActions` and `Versions` do the same
-for the other four tables. Their terminals return pointers; keep those intact,
-because copying an embedded Model leaves its `Entity` pointer aimed at the
-original allocation.
+`groupTable` in `model.go` configures the table, string primary key and default
+`tenant_id` scope, and `Groups(db)`, generated beside it by `aru model:build`,
+starts every query on it; `GroupActions`, `GroupUsers`, `UserActions` and
+`Versions` do the same for the other four tables. Run `aru model:build` after
+changing an entity, and `aru model:build --check` before committing: the query
+files are generated and never edited. Their terminals return pointers; keep
+those intact, because a copied row is not the row its embedded Model was built
+inside, and its writes refuse with `model.ErrUnwired`.
 
 **A new Model constructor has to be added to `modelConstructors` in
 `tests/Unit/audit_test.go` in the same commit.** A table the ordering audit does
 not watch is a table something can reach without a decision, and nothing else
-would say so. The audit fails when the list and `model.go` disagree, in both
-directions.
+would say so. The audit fails when the list disagrees with the tables in
+`model.go` or the constructors generated beside them, in both directions.
 
 ## What does not exist here
 

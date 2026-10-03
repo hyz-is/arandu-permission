@@ -37,8 +37,8 @@ CRUD stays on `Groups(db)` and its Builder. Add a Repository only for a
 specialized complex query, read model, report, export or raw SQL contract; a
 wrapper around `Find`, `Get`, `Save` or `Delete` is a second data path.
 
-Model-backed entities stay pointers. Copying `Permission` also copies an embedded
-Model whose `Entity` still points to the original allocation. Response
+Model-backed entities stay pointers. A copied `Group` is not the row its embedded
+Model was built inside, and its writes refuse with `model.ErrUnwired`. Response
 resources are the deliberate snapshot boundary; Service results are not.
 
 ## Style

@@ -28,6 +28,7 @@ module.go       registration, routes, handlers and migrations
 config.go       what the application passes in
 catalogue.go    the closed set of actions, and the selectors that name them
 model.go        the entities, and what they may answer with
+*Query.go       the queries aru model:build generates from model.go; never edited
 policy.go       who may do what
 service.go      the rules and authorized Model access
 resolver.go     what a request carries into every policy, and the route guard
@@ -145,27 +146,32 @@ request.
 
 ## Changing the Model
 
-`Group` embeds `model.Model[Group]`, and `Groups(db)` is the one
-configured entry point for the table. Keep the application-generated key
-settings and tenant default visible there:
+`Group` embeds `model.Model`, and `groupTable` is the one place its table is
+configured. Keep the application-generated key and the tenant default visible
+there:
 
 ```go
-func Groups(db *data.DB) *model.Model[Group] {
-	m := model.NewModel[Permission]("permissions", db, db.GetQueryGrammar(), db.GetPostProcessor())
-	m.KeyType = "string"
-	m.Incrementing = false
-	return m
-}
+var groupTable = model.NewTable(model.TableSpec{
+	Name:      GroupsTable,
+	New:       func() model.Entity { return new(Group) },
+	ManualKey: true,
+})
 ```
 
-Do not set `TenantColumn` to `""`: this package owns tenant data. Model
+`aru model:build` generates `GroupQuery.go` beside it, with
+`func Groups(db model.DB) *GroupQuery` as the entry point for every query, the
+typed `GroupCollection`, and no type parameter anywhere. The file is never
+edited: run `aru model:build` after changing an entity, and
+`aru model:build --check` fails when a query file is stale.
+
+Do not set `Global` on a spec: this package owns tenant data. Model
 terminals require a Grant and apply `tenant_id`; the Service still calls
 `security.Authorize` first because the Model does not decide which Policy
 action the Grant represents.
 
-Keep rows as pointers after `NewInstance`, `First`, `Find`, or `Get`. The
-embedded Model's `Entity` points into that allocation, so copying the row and
-then calling a promoted terminal would act on the original.
+Keep rows as pointers after `New`, `First`, `Find`, or `Get`. The embedded Model
+knows the allocation it was built inside, so a copied row refuses every write
+with `model.ErrUnwired`.
 
 This table declares `created_at` but not `updated_at`. The Hesape Model stamps a
 timestamp only when the entity declares its column, so creation remains correct
