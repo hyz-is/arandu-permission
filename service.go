@@ -10,7 +10,6 @@ import (
 	"github.com/arandu-io/framework/data"
 	"github.com/arandu-io/framework/security"
 	"github.com/arandu-io/framework/validation"
-	"github.com/arandu-io/hesape/database/model"
 )
 
 // Pagination bounds for the listing. A request that asks for everything gets
@@ -188,10 +187,10 @@ func (s *PermissionService) ListGroups(ctx context.Context, actor security.Subje
 		limit = maxLimit
 	}
 
-	page := Groups(s.db).NewQuery()
+	page := Groups(s.db)
 	if term := strings.TrimSpace(q.Search); term != "" {
 		pattern := "%" + literal(term) + "%"
-		page = page.Where(func(match *model.Builder[Group]) {
+		page = page.Where(func(match *GroupQuery) {
 			match.Where("slug", "like", pattern).OrWhere("name", "like", pattern)
 		})
 	}
@@ -238,7 +237,7 @@ func (s *PermissionService) FindGroup(ctx context.Context, actor security.Subjec
 		return nil, err
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(id).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(id).First(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +265,7 @@ func (s *PermissionService) CreateGroup(ctx context.Context, actor security.Subj
 		return nil, err
 	}
 
-	taken, err := Groups(s.db).NewQuery().Where("slug", "=", in.Slug).Exists(ctx, g)
+	taken, err := Groups(s.db).Where("slug", "=", in.Slug).Exists(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -278,11 +277,11 @@ func (s *PermissionService) CreateGroup(ctx context.Context, actor security.Subj
 	if err != nil {
 		return nil, err
 	}
-	instance, err := Groups(s.db).NewInstance(nil, false)
+	instance, err := Groups(s.db).New()
 	if err != nil {
 		return nil, err
 	}
-	candidate := instance.Entity
+	candidate := instance
 	candidate.ID = id
 	candidate.TenantID = data.Tenant(g)
 	candidate.Slug = in.Slug
@@ -378,7 +377,7 @@ func (s *PermissionService) Bootstrap(ctx context.Context, tenant string, in Boo
 	if err != nil {
 		return nil, err
 	}
-	occupied, err := Groups(s.db).NewQuery().Exists(ctx, g)
+	occupied, err := Groups(s.db).Exists(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +419,7 @@ func (s *PermissionService) UpdateGroup(ctx context.Context, actor security.Subj
 		return nil, err
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(id).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(id).First(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +456,7 @@ func (s *PermissionService) DeleteGroup(ctx context.Context, actor security.Subj
 		return err
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(id).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(id).First(ctx, g)
 	if err != nil {
 		return err
 	}
@@ -469,10 +468,10 @@ func (s *PermissionService) DeleteGroup(ctx context.Context, actor security.Subj
 	}
 
 	if err := data.Transaction(ctx, s.db, func(ctx context.Context) error {
-		if _, err := GroupActions(s.db).NewQuery().Where("group_id", "=", record.ID).Delete(ctx, g); err != nil {
+		if _, err := GroupActions(s.db).Where("group_id", "=", record.ID).Delete(ctx, g); err != nil {
 			return err
 		}
-		if _, err := GroupUsers(s.db).NewQuery().Where("group_id", "=", record.ID).Delete(ctx, g); err != nil {
+		if _, err := GroupUsers(s.db).Where("group_id", "=", record.ID).Delete(ctx, g); err != nil {
 			return err
 		}
 		if _, err := record.Delete(ctx, g); err != nil {
@@ -504,7 +503,7 @@ func (s *PermissionService) ActionsOf(ctx context.Context, actor security.Subjec
 		return nil, err
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(groupID).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(groupID).First(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -596,11 +595,11 @@ func (s *PermissionService) SetActions(ctx context.Context, actor security.Subje
 			if err != nil {
 				return err
 			}
-			instance, err := GroupActions(s.db).NewInstance(nil, false)
+			instance, err := GroupActions(s.db).New()
 			if err != nil {
 				return err
 			}
-			row := instance.Entity
+			row := instance
 			row.ID = id
 			row.TenantID = data.Tenant(g)
 			row.GroupID = record.ID
@@ -614,7 +613,7 @@ func (s *PermissionService) SetActions(ctx context.Context, actor security.Subje
 			for _, action := range change.Removed {
 				removed = append(removed, action)
 			}
-			if _, err := GroupActions(s.db).NewQuery().
+			if _, err := GroupActions(s.db).
 				Where("group_id", "=", record.ID).
 				WhereIn("action", removed).
 				Delete(ctx, g); err != nil {
@@ -640,7 +639,7 @@ func (s *PermissionService) MembersOf(ctx context.Context, actor security.Subjec
 		return nil, err
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(groupID).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(groupID).First(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -710,11 +709,11 @@ func (s *PermissionService) SetMembers(ctx context.Context, actor security.Subje
 			if err != nil {
 				return err
 			}
-			instance, err := GroupUsers(s.db).NewInstance(nil, false)
+			instance, err := GroupUsers(s.db).New()
 			if err != nil {
 				return err
 			}
-			row := instance.Entity
+			row := instance
 			row.ID = id
 			row.TenantID = data.Tenant(g)
 			row.GroupID = record.ID
@@ -728,7 +727,7 @@ func (s *PermissionService) SetMembers(ctx context.Context, actor security.Subje
 			for _, userID := range change.Removed {
 				removed = append(removed, userID)
 			}
-			if _, err := GroupUsers(s.db).NewQuery().
+			if _, err := GroupUsers(s.db).
 				Where("group_id", "=", record.ID).
 				WhereIn("user_id", removed).
 				Delete(ctx, g); err != nil {
@@ -834,11 +833,11 @@ func (s *PermissionService) SetDirectActions(ctx context.Context, actor security
 			if err != nil {
 				return err
 			}
-			instance, err := UserActions(s.db).NewInstance(nil, false)
+			instance, err := UserActions(s.db).New()
 			if err != nil {
 				return err
 			}
-			row := instance.Entity
+			row := instance
 			row.ID = id
 			row.TenantID = data.Tenant(g)
 			row.UserID = userID
@@ -852,7 +851,7 @@ func (s *PermissionService) SetDirectActions(ctx context.Context, actor security
 			for _, action := range change.Removed {
 				removed = append(removed, action)
 			}
-			if _, err := UserActions(s.db).NewQuery().
+			if _, err := UserActions(s.db).
 				Where("user_id", "=", userID).
 				WhereIn("action", removed).
 				Delete(ctx, g); err != nil {
@@ -919,7 +918,7 @@ func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q
 
 	var restrict string
 	if slug := strings.TrimSpace(q.Group); slug != "" {
-		record, err := Groups(s.db).NewQuery().Where("slug", "=", slug).First(ctx, g)
+		record, err := Groups(s.db).Where("slug", "=", slug).First(ctx, g)
 		if err != nil {
 			return MemberPage{}, err
 		}
@@ -929,12 +928,12 @@ func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q
 		restrict = record.ID
 	}
 
-	memberships := GroupUsers(s.db).NewQuery()
+	memberships := GroupUsers(s.db)
 	if restrict != "" {
 		memberships = memberships.Where("group_id", "=", restrict)
 	}
 	if search := strings.TrimSpace(search); search != "" {
-		memberships.GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
+		memberships.Base().GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
 	}
 	if q.Cursor != "" {
 		memberships = memberships.Where("user_id", ">", q.Cursor)
@@ -962,9 +961,9 @@ func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q
 	// group: a person with no membership in that group does not belong on the
 	// page, whatever else they carry.
 	if restrict == "" {
-		own := UserActions(s.db).NewQuery()
+		own := UserActions(s.db)
 		if search := strings.TrimSpace(search); search != "" {
-			own.GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
+			own.Base().GetQuery().WhereLike("user_id", "%"+search+"%", false, "and", false)
 		}
 		if q.Cursor != "" {
 			own = own.Where("user_id", ">", q.Cursor)
@@ -1018,7 +1017,7 @@ func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q
 	}
 
 	belongs := map[string][]GroupRef{}
-	links, err := GroupUsers(s.db).NewQuery().WhereIn("user_id", ids).Get(ctx, g)
+	links, err := GroupUsers(s.db).WhereIn("user_id", ids).Get(ctx, g)
 	if err != nil {
 		return MemberPage{}, err
 	}
@@ -1032,7 +1031,7 @@ func (s *PermissionService) listMembers(ctx context.Context, g security.Grant, q
 	}
 
 	carries := map[string]int{}
-	grants, err := UserActions(s.db).NewQuery().WhereIn("user_id", ids).Get(ctx, g)
+	grants, err := UserActions(s.db).WhereIn("user_id", ids).Get(ctx, g)
 	if err != nil {
 		return MemberPage{}, err
 	}
@@ -1183,7 +1182,7 @@ func (s *PermissionService) ViewCatalogue(ctx context.Context, actor security.Su
 	if err != nil {
 		return CatalogueView{}, err
 	}
-	links, err := GroupActions(s.db).NewQuery().OrderBy("action").Get(ctx, g)
+	links, err := GroupActions(s.db).OrderBy("action").Get(ctx, g)
 	if err != nil {
 		return CatalogueView{}, err
 	}
@@ -1265,7 +1264,7 @@ func (s *PermissionService) ViewMatrix(ctx context.Context, actor security.Subje
 
 	held := map[string]map[string]bool{}
 	if len(ids) > 0 {
-		links, err := GroupActions(s.db).NewQuery().WhereIn("group_id", ids).Get(ctx, g)
+		links, err := GroupActions(s.db).WhereIn("group_id", ids).Get(ctx, g)
 		if err != nil {
 			return MatrixView{}, err
 		}
@@ -1315,7 +1314,7 @@ func (s *PermissionService) plannedActions(ctx context.Context, g security.Grant
 		asked = append(asked, string(action))
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(groupID).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(groupID).First(ctx, g)
 	if err != nil {
 		return nil, Change{}, err
 	}
@@ -1344,7 +1343,7 @@ func (s *PermissionService) plannedMembers(ctx context.Context, g security.Grant
 		}
 	}
 
-	record, err := Groups(s.db).NewQuery().WhereKey(groupID).First(ctx, g)
+	record, err := Groups(s.db).WhereKey(groupID).First(ctx, g)
 	if err != nil {
 		return nil, Change{}, err
 	}
@@ -1392,7 +1391,7 @@ func (s *PermissionService) plannedDirect(ctx context.Context, g security.Grant,
 
 // directHeld is the actions one person carries in their own right, sorted.
 func (s *PermissionService) directHeld(ctx context.Context, g security.Grant, userID string) ([]string, error) {
-	rows, err := UserActions(s.db).NewQuery().Where("user_id", "=", userID).OrderBy("action").Get(ctx, g)
+	rows, err := UserActions(s.db).Where("user_id", "=", userID).OrderBy("action").Get(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -1407,7 +1406,7 @@ func (s *PermissionService) directHeld(ctx context.Context, g security.Grant, us
 
 // held is the actions one group carries, sorted.
 func (s *PermissionService) held(ctx context.Context, g security.Grant, groupID string) ([]string, error) {
-	rows, err := GroupActions(s.db).NewQuery().Where("group_id", "=", groupID).OrderBy("action").Get(ctx, g)
+	rows, err := GroupActions(s.db).Where("group_id", "=", groupID).OrderBy("action").Get(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -1422,7 +1421,7 @@ func (s *PermissionService) held(ctx context.Context, g security.Grant, groupID 
 
 // membership is who is in one group, sorted.
 func (s *PermissionService) membership(ctx context.Context, g security.Grant, groupID string) ([]string, error) {
-	rows, err := GroupUsers(s.db).NewQuery().Where("group_id", "=", groupID).OrderBy("user_id").Get(ctx, g)
+	rows, err := GroupUsers(s.db).Where("group_id", "=", groupID).OrderBy("user_id").Get(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -1437,7 +1436,7 @@ func (s *PermissionService) membership(ctx context.Context, g security.Grant, gr
 
 // groupRefs is every group of the tenant, by identifier.
 func (s *PermissionService) groupRefs(ctx context.Context, g security.Grant) (map[string]GroupRef, error) {
-	rows, err := Groups(s.db).NewQuery().OrderBy("slug").Get(ctx, g)
+	rows, err := Groups(s.db).OrderBy("slug").Get(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -1453,7 +1452,7 @@ func (s *PermissionService) groupRefs(ctx context.Context, g security.Grant) (ma
 // systemGroups is the set of group identifiers whose actions cannot be
 // detached.
 func (s *PermissionService) systemGroups(ctx context.Context, g security.Grant) (map[string]bool, error) {
-	rows, err := Groups(s.db).NewQuery().Where("is_system", "=", true).Get(ctx, g)
+	rows, err := Groups(s.db).Where("is_system", "=", true).Get(ctx, g)
 	if err != nil {
 		return nil, err
 	}
@@ -1484,7 +1483,7 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 		return out, nil
 	}
 
-	memberships, err := GroupUsers(s.db).NewQuery().Where("user_id", "=", userID).Get(ctx, g)
+	memberships, err := GroupUsers(s.db).Where("user_id", "=", userID).Get(ctx, g)
 	if err != nil {
 		return Effective{}, err
 	}
@@ -1497,7 +1496,7 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 
 	refs := map[string]GroupRef{}
 	if len(ids) > 0 {
-		groups, err := Groups(s.db).NewQuery().WhereIn("id", ids).OrderBy("slug").Get(ctx, g)
+		groups, err := Groups(s.db).WhereIn("id", ids).OrderBy("slug").Get(ctx, g)
 		if err != nil {
 			return Effective{}, err
 		}
@@ -1511,7 +1510,7 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 
 	origin := map[string][]GroupRef{}
 	if len(refs) > 0 {
-		links, err := GroupActions(s.db).NewQuery().WhereIn("group_id", ids).OrderBy("action").Get(ctx, g)
+		links, err := GroupActions(s.db).WhereIn("group_id", ids).OrderBy("action").Get(ctx, g)
 		if err != nil {
 			return Effective{}, err
 		}
@@ -1561,7 +1560,7 @@ func (s *PermissionService) effective(ctx context.Context, g security.Grant, use
 // version reads the tenant's token, answering zero when the tenant has never
 // had one.
 func (s *PermissionService) version(ctx context.Context, g security.Grant) (int64, error) {
-	record, err := Versions(s.db).NewQuery().First(ctx, g)
+	record, err := Versions(s.db).First(ctx, g)
 	if err != nil {
 		return 0, err
 	}
@@ -1579,7 +1578,7 @@ func (s *PermissionService) version(ctx context.Context, g security.Grant) (int6
 // a remembered answer outlive the change that should have ended it. Nothing
 // orders these values: they are compared for equality and for nothing else.
 func (s *PermissionService) bump(ctx context.Context, g security.Grant) error {
-	record, err := Versions(s.db).NewQuery().First(ctx, g)
+	record, err := Versions(s.db).First(ctx, g)
 	if err != nil {
 		return err
 	}
@@ -1593,11 +1592,11 @@ func (s *PermissionService) bump(ctx context.Context, g security.Grant) error {
 		return err
 	}
 
-	instance, err := Versions(s.db).NewInstance(nil, false)
+	instance, err := Versions(s.db).New()
 	if err != nil {
 		return err
 	}
-	row := instance.Entity
+	row := instance
 	row.TenantID = data.Tenant(g)
 	row.Version = next
 	_, err = row.Save(ctx, g)

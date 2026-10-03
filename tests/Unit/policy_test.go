@@ -9,6 +9,7 @@ import (
 	"github.com/arandu-io/framework/data"
 	"github.com/arandu-io/framework/security"
 	"github.com/arandu-io/hesape/database/model"
+	"github.com/arandu-io/hesape/database/query"
 
 	permission "github.com/hyz-is/arandu-permission"
 )
@@ -299,39 +300,90 @@ func TestTheModelsAreWiredAndTenantScoped(t *testing.T) {
 	t.Parallel()
 
 	handle := nilHandle()
-	groups := permission.Groups(handle)
-	if groups.GetTable() != permission.GroupsTable {
-		t.Errorf("Groups table = %q, want %s", groups.GetTable(), permission.GroupsTable)
+	groups := permission.Groups(handle).Base().Table()
+	if groups.Name() != permission.GroupsTable {
+		t.Errorf("Groups table = %q, want %s", groups.Name(), permission.GroupsTable)
 	}
-	if groups.KeyType != "string" || groups.Incrementing {
-		t.Errorf("Groups key is type %q, incrementing %t; want application-generated text", groups.KeyType, groups.Incrementing)
+	if keyType := groups.MorphModel(handle).GetKeyType(); keyType != "string" {
+		t.Errorf("Groups key is type %q; want application-generated text", keyType)
 	}
-	if model.ModelOf(groups.Entity) != groups {
+
+	// The key is the application's: saving a new row writes the key it was
+	// given, and never asks the database for one. A table that incremented
+	// would read a number back over the identifier the service generated.
+	recorder := &insertRecorder{DB: handle}
+	row, err := permission.Groups(recorder).New()
+	if err != nil {
+		t.Fatalf("Groups(db).New() = %v", err)
+	}
+	if row.Table() != groups {
 		t.Error("Groups returned an entity whose embedded model is not wired to it")
+	}
+	row.ID = "group-1"
+	if _, err := row.Save(context.Background(), security.SystemGrant(permission.PermissionCreate, "acme")); err != nil {
+		t.Fatalf("saving a new group through the recorder = %v", err)
+	}
+	if recorder.askedForID || len(recorder.inserts) != 1 {
+		t.Errorf("Groups key is incrementing (asked for an id %t, plain inserts %d); want application-generated text",
+			recorder.askedForID, len(recorder.inserts))
 	}
 
 	// Every one of the four is scoped by tenant. A table declared global here
 	// would be a table one customer reads another's rows from, and nothing else
-	// in this package would say so.
-	for name, column := range map[string]string{
-		permission.GroupsTable:       permission.Groups(handle).TenantColumn,
-		permission.GroupActionsTable: permission.GroupActions(handle).TenantColumn,
-		permission.GroupUsersTable:   permission.GroupUsers(handle).TenantColumn,
-		permission.VersionsTable:     permission.Versions(handle).TenantColumn,
+	// in this package would say so. The statement is prepared and not run: the
+	// handle has no database behind it.
+	g := security.SystemGrant(permission.PermissionView, "acme")
+	for name, scoped := range map[string]*model.Builder{
+		permission.GroupsTable:       permission.Groups(handle).Base(),
+		permission.GroupActionsTable: permission.GroupActions(handle).Base(),
+		permission.GroupUsersTable:   permission.GroupUsers(handle).Base(),
+		permission.VersionsTable:     permission.Versions(handle).Base(),
 	} {
-		if column != "tenant_id" {
-			t.Errorf("%s is scoped by %q, want tenant_id", name, column)
+		base, err := scoped.ToBase(context.Background(), g)
+		if err != nil {
+			t.Fatalf("preparing a read of %s = %v", name, err)
+		}
+		if sql := base.ToSQL(); !strings.Contains(sql, `"`+name+`"."tenant_id" = ?`) {
+			t.Errorf("%s is not scoped by tenant_id: %s", name, sql)
+		}
+		if bindings := base.GetBindings(); len(bindings) != 1 || bindings[0] != "acme" {
+			t.Errorf("%s is scoped by %v, want the Grant's tenant", name, bindings)
 		}
 	}
 
 	// The link tables keep no timestamps, and the version table is keyed by the
 	// tenant rather than by an identifier of its own.
-	if permission.GroupActions(handle).Timestamps || permission.GroupUsers(handle).Timestamps {
+	if permission.GroupActions(handle).Base().Table().MorphModel(handle).UsesTimestamps() ||
+		permission.GroupUsers(handle).Base().Table().MorphModel(handle).UsesTimestamps() {
 		t.Error("a link table stamps timestamps, which is a column written and never read")
 	}
-	if key := permission.Versions(handle).PrimaryKey; key != "tenant_id" {
+	if key := permission.Versions(handle).Base().Table().MorphModel(handle).GetKeyName(); key != "tenant_id" {
 		t.Errorf("Versions is keyed by %q, want tenant_id: one row per customer", key)
 	}
+}
+
+// insertRecorder is a handle that runs no statement. It records the inserts a
+// model issues, and whether one asked the database for the key it generated.
+type insertRecorder struct {
+	*data.DB
+	inserts    []string
+	askedForID bool
+}
+
+func (r *insertRecorder) Insert(_ context.Context, sql string, _ []any) (bool, error) {
+	r.inserts = append(r.inserts, sql)
+	return true, nil
+}
+
+func (r *insertRecorder) GetPostProcessor() query.Processor { return r }
+
+func (r *insertRecorder) ProcessSelect(_ *query.Builder, rows []query.Record) []query.Record {
+	return rows
+}
+
+func (r *insertRecorder) ProcessInsertGetID(context.Context, *query.Builder, string, []any, string) (int64, error) {
+	r.askedForID = true
+	return 1, nil
 }
 
 func TestASystemGrantWithoutATenantReachesNothing(t *testing.T) {
@@ -339,7 +391,7 @@ func TestASystemGrantWithoutATenantReachesNothing(t *testing.T) {
 
 	// A system grant with no tenant names no customer. The model refuses it
 	// while preparing the query, before the nil handle can issue a statement.
-	_, err := permission.Groups(nilHandle()).NewQuery().WhereKey("group-1").First(
+	_, err := permission.Groups(nilHandle()).WhereKey("group-1").First(
 		context.Background(), security.SystemGrant(permission.PermissionView, ""))
 	if !errors.Is(err, model.ErrNoTenant) {
 		t.Fatalf("a system grant with no tenant returned %v, want ErrNoTenant", err)

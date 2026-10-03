@@ -95,12 +95,16 @@ func TestThePackageUsesTheModelFirstDataPath(t *testing.T) {
 	wants := map[string][]string{
 		"model.go": {
 			`"github.com/arandu-io/hesape/database/model"`,
-			"model.Model[Group]",
-			"func Groups(db *data.DB) *model.Model[Group]",
-			"func GroupActions(db *data.DB) *model.Model[GroupAction]",
-			"func GroupUsers(db *data.DB) *model.Model[GroupUser]",
-			"func Versions(db *data.DB) *model.Model[Version]",
+			"type Group struct {\n\tmodel.Model\n",
+			"var groupTable = model.NewTable(model.TableSpec{",
+			"var groupActionTable = model.NewTable(model.TableSpec{",
+			"var groupUserTable = model.NewTable(model.TableSpec{",
+			"var versionTable = model.NewTable(model.TableSpec{",
 		},
+		"GroupQuery.go":       {"func Groups(db model.DB) *GroupQuery"},
+		"GroupActionQuery.go": {"func GroupActions(db model.DB) *GroupActionQuery"},
+		"GroupUserQuery.go":   {"func GroupUsers(db model.DB) *GroupUserQuery"},
+		"VersionQuery.go":     {"func Versions(db model.DB) *VersionQuery"},
 		"service.go": {
 			"db     *data.DB",
 			"func NewPermissionService(db *data.DB, catalogue Catalogue, listeners ...Listener) *PermissionService",

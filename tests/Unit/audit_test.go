@@ -272,8 +272,9 @@ func takesParameterNamed(function *ast.FuncDecl, name string) bool {
 // Naming them rather than matching a shape is deliberate: the audit has to fail
 // when a new table is reached without a decision, and a new table means a new
 // name here. A list that is one name short is exactly the failure this file
-// exists to catch, so a test below reads the constructors back out of model.go
-// and fails when one is missing from this map.
+// exists to catch, so a test below counts the tables in model.go and the
+// constructors generated beside them, and fails when one is missing from this
+// map.
 var modelConstructors = map[string]bool{
 	"Groups": true, "GroupActions": true, "GroupUsers": true,
 	"UserActions": true, "Versions": true,
@@ -314,29 +315,43 @@ func firstModelReach(body *ast.BlockStmt) token.Pos {
 func TestEveryModelConstructorIsAudited(t *testing.T) {
 	t.Parallel()
 
-	found := 0
+	// A table is declared in model.go, and the constructor that starts a query
+	// on it is generated beside it. Both are counted, so a table whose query
+	// was never generated is caught here as well as by model:build --check.
+	tables, found := 0, 0
 	for _, source := range auditedFiles(t) {
-		if source.path != "model.go" {
-			continue
+		if source.path == "model.go" {
+			ast.Inspect(source.file, func(node ast.Node) bool {
+				if call, ok := node.(*ast.CallExpr); ok && calledName(call) == "NewTable" {
+					tables++
+				}
+				return true
+			})
 		}
 		for _, declaration := range source.file.Decls {
 			function, ok := declaration.(*ast.FuncDecl)
 			if !ok || function.Recv != nil || !function.Name.IsExported() {
 				continue
 			}
-			if function.Type.Results == nil || len(function.Type.Results.List) != 1 ||
-				namedType(function.Type.Results.List[0].Type) != "Model" {
+			if function.Type.Results == nil || len(function.Type.Results.List) != 1 {
+				continue
+			}
+			result, pointer := function.Type.Results.List[0].Type.(*ast.StarExpr)
+			if !pointer || !strings.HasSuffix(namedType(result), "Query") {
 				continue
 			}
 			found++
 			if !modelConstructors[function.Name.Name] {
-				t.Errorf("model.go declares %s and audit_test.go does not watch it: add it to modelConstructors",
-					function.Name.Name)
+				t.Errorf("%s declares %s and audit_test.go does not watch it: add it to modelConstructors",
+					source.path, function.Name.Name)
 			}
 		}
 	}
+	if tables != len(modelConstructors) {
+		t.Fatalf("model.go declares %d tables and %d Model constructors are watched", tables, len(modelConstructors))
+	}
 	if found != len(modelConstructors) {
-		t.Fatalf("model.go declares %d Model constructors and %d are watched", found, len(modelConstructors))
+		t.Fatalf("the package declares %d Model constructors and %d are watched", found, len(modelConstructors))
 	}
 }
 

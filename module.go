@@ -24,6 +24,7 @@
 //	config.go       -> what the application passes in
 //	catalogue.go    -> the closed set of actions, and the selectors that name them
 //	model.go        -> the entities, and what they may answer with
+//	*Query.go       -> the generated queries, one per entity of model.go
 //	policy.go       -> who may do what
 //	service.go      -> the rules and Model access, after authorization
 //	resolver.go     -> what a request carries into every policy, and the route guard
