@@ -1,6 +1,6 @@
 # Upgrade Guide
 
-## Unreleased
+## v0.5.0
 
 ### Each entity is a concrete type, and the group listing request is `GroupListQuery`
 
@@ -892,7 +892,7 @@ Every release that breaks something names what to replace, here, beside the
 version that broke it. CI refuses an incompatible change whose symbols are not
 named on this page.
 
-## v0.4.3
+### Republish the permission views (prepared as v0.4.3, never tagged)
 
 No API, route or migration changes. Republish the permission views so the members group filter uses the native Kyse Select component and no longer carries a template directive inside an HTML attribute:
 

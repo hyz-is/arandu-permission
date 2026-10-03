@@ -10,6 +10,8 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-03
+
 ### Changed
 
 - **Breaking.** `Group`, `GroupAction`, `GroupUser`, `UserAction` and `Version`
@@ -28,9 +30,10 @@ a release is corrected by another release and never by moving a tag.
   `v0.11.0`; `arandu.mod.toml` declares `framework = ">= 0.50"`. Routes,
   migrations, actions, policy decisions and tenant scoping are unchanged.
 
-## [0.4.3] - 2026-09-18
-
 ### Fixed
+
+Carried from v0.4.3, which was prepared and never tagged:
+
 
 - Render the permission-member group filter through the native Kyse Select component instead of placing a template directive inside an HTML option attribute.
 - Keep the published permission views compatible with the strict CSP/client-directive contract used by Arandu applications.
