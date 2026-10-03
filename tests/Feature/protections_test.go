@@ -215,7 +215,7 @@ func TestNothingOfOneTenantIsReachableFromAnother(t *testing.T) {
 	}
 
 	// And the listing answers with one row rather than two.
-	page, err := svc.ListGroups(ctx, ours, permission.GroupQuery{})
+	page, err := svc.ListGroups(ctx, ours, permission.GroupListQuery{})
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}
@@ -538,7 +538,7 @@ func TestTheFormCannotCreateASystemGroup(t *testing.T) {
 		t.Fatalf("creating a group answered %d, want a redirect", rec.Code)
 	}
 
-	page, err := svc.ListGroups(context.Background(), admin, permission.GroupQuery{Search: "sneaky"})
+	page, err := svc.ListGroups(context.Background(), admin, permission.GroupListQuery{Search: "sneaky"})
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}

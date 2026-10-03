@@ -145,7 +145,7 @@ func (m *Module) runShow(ctx context.Context, o *console.IO) error {
 		return err
 	}
 
-	view, err := m.svc.ViewMatrix(ctx, actor, GroupQuery{Limit: MaxPageSize})
+	view, err := m.svc.ViewMatrix(ctx, actor, GroupListQuery{Limit: MaxPageSize})
 	if err != nil {
 		return err
 	}
@@ -437,7 +437,7 @@ func (m *Module) groupBySlug(ctx context.Context, actor security.Subject, slug s
 		return GroupRef{}, fmt.Errorf("permission: no group was named")
 	}
 
-	page, err := m.svc.ListGroups(ctx, actor, GroupQuery{Search: slug, Limit: MaxPageSize})
+	page, err := m.svc.ListGroups(ctx, actor, GroupListQuery{Search: slug, Limit: MaxPageSize})
 	if err != nil {
 		return GroupRef{}, err
 	}

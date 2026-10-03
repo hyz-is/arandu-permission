@@ -472,7 +472,7 @@ type MemberPageData struct {
 // index answers a page of groups.
 func (m *Module) index(ctx *fhttp.Context) error {
 	search := ctx.Query("q")
-	page, err := m.svc.ListGroups(ctx.Ctx(), m.subject(ctx.Request), GroupQuery{
+	page, err := m.svc.ListGroups(ctx.Ctx(), m.subject(ctx.Request), GroupListQuery{
 		Search: search,
 		Cursor: ctx.Query("cursor"),
 		Limit:  m.cfg.PageSize,
@@ -647,7 +647,7 @@ func (m *Module) catalogue(ctx *fhttp.Context) error {
 // matrix answers a page of groups against every action.
 func (m *Module) matrix(ctx *fhttp.Context) error {
 	search := ctx.Query("q")
-	grid, err := m.svc.ViewMatrix(ctx.Ctx(), m.subject(ctx.Request), GroupQuery{
+	grid, err := m.svc.ViewMatrix(ctx.Ctx(), m.subject(ctx.Request), GroupListQuery{
 		Search: search,
 		Cursor: ctx.Query("cursor"),
 		Limit:  m.cfg.PageSize,
@@ -679,7 +679,7 @@ func (m *Module) members(ctx *fhttp.Context) error {
 	if err != nil {
 		return m.answer(ctx, err)
 	}
-	groups, err := m.svc.ListGroups(ctx.Ctx(), actor, GroupQuery{Limit: MaxPageSize})
+	groups, err := m.svc.ListGroups(ctx.Ctx(), actor, GroupListQuery{Limit: MaxPageSize})
 	if err != nil {
 		return m.answer(ctx, err)
 	}

@@ -245,7 +245,7 @@ func TestTheServiceRefusesBeforeReachingTheModel(t *testing.T) {
 	if _, err := service.FindGroup(ctx, actor, "group-1"); !errors.Is(err, security.ErrForbidden) {
 		t.Errorf("FindGroup reached the model before the policy refusal: %v", err)
 	}
-	if _, err := service.ListGroups(ctx, actor, permission.GroupQuery{}); !errors.Is(err, security.ErrForbidden) {
+	if _, err := service.ListGroups(ctx, actor, permission.GroupListQuery{}); !errors.Is(err, security.ErrForbidden) {
 		t.Errorf("ListGroups reached the model before the policy refusal: %v", err)
 	}
 	if _, err := service.CreateGroup(ctx, actor, permission.CreateGroupRequest{Slug: "one", Name: "One"}); !errors.Is(err, security.ErrForbidden) {
@@ -281,7 +281,7 @@ func TestTheServiceRefusesBeforeReachingTheModel(t *testing.T) {
 	if _, err := service.ViewCatalogue(ctx, actor); !errors.Is(err, security.ErrForbidden) {
 		t.Errorf("ViewCatalogue reached the model before the policy refusal: %v", err)
 	}
-	if _, err := service.ViewMatrix(ctx, actor, permission.GroupQuery{}); !errors.Is(err, security.ErrForbidden) {
+	if _, err := service.ViewMatrix(ctx, actor, permission.GroupListQuery{}); !errors.Is(err, security.ErrForbidden) {
 		t.Errorf("ViewMatrix reached the model before the policy refusal: %v", err)
 	}
 

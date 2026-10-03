@@ -85,8 +85,8 @@ func NewPermissionService(db *data.DB, catalogue Catalogue, listeners ...Listene
 // screen may offer and what a write may store are one set, read from one place.
 func (s *PermissionService) Catalogue() Catalogue { return s.catalogue }
 
-// GroupQuery is what a listing asks for.
-type GroupQuery struct {
+// GroupListQuery is what a listing of groups asks for.
+type GroupListQuery struct {
 	// Search narrows the listing to groups whose slug or name contains it.
 	//
 	// The characters the pattern syntax reserves are removed before the term is
@@ -174,7 +174,7 @@ var _ validation.Validatable = UpdateGroupRequest{}
 // per record on a page and would still not narrow the query -- a listing that
 // has to read a customer's rows in order to decide it may not read them has
 // already read them.
-func (s *PermissionService) ListGroups(ctx context.Context, actor security.Subject, q GroupQuery) (GroupPage, error) {
+func (s *PermissionService) ListGroups(ctx context.Context, actor security.Subject, q GroupListQuery) (GroupPage, error) {
 	g, err := security.Authorize(ctx, s.groups, actor, PermissionList, Group{})
 	if err != nil {
 		return GroupPage{}, err
@@ -1245,7 +1245,7 @@ type MatrixView struct {
 }
 
 // ViewMatrix returns a page of groups against every action of the catalogue.
-func (s *PermissionService) ViewMatrix(ctx context.Context, actor security.Subject, q GroupQuery) (MatrixView, error) {
+func (s *PermissionService) ViewMatrix(ctx context.Context, actor security.Subject, q GroupListQuery) (MatrixView, error) {
 	page, err := s.ListGroups(ctx, actor, q)
 	if err != nil {
 		return MatrixView{}, err
