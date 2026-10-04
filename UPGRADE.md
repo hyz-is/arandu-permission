@@ -1,5 +1,19 @@
 # Upgrade Guide
 
+## v0.5.1
+
+### A group row can be locked again
+
+Nothing to change. `GroupQuery` gains `GetQuery`, the statement under the query,
+so a consumer that locked a group through the generic builder of v0.4.2 keeps
+doing so:
+
+```go
+groups := permission.Groups(db).Where("slug", "=", "owners")
+groups.GetQuery().LockForUpdate()
+group, err := groups.First(ctx, grant)
+```
+
 ## v0.5.0
 
 ### Each entity is a concrete type, and the group listing request is `GroupListQuery`

@@ -6,6 +6,7 @@ import (
 
 	"github.com/arandu-io/framework/security"
 	"github.com/arandu-io/hesape/database/model"
+	"github.com/arandu-io/hesape/database/query"
 )
 
 // The tables this package owns.
@@ -69,6 +70,12 @@ type Group struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
+
+// GetQuery returns the statement under the query, for the row lock a consumer
+// takes on a group before a read-modify-write that spans this package and its
+// own tables. Its terminals take a Grant and are filtered by its tenant, like the
+// generated query's.
+func (q *GroupQuery) GetQuery() *query.Builder { return q.Base().GetQuery() }
 
 // groupTable is the table of Group. Its query, Groups, is generated beside it
 // by aru model:build.

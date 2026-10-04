@@ -10,6 +10,15 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-04
+
+### Fixed
+
+- `GroupQuery` gains `GetQuery`, the statement under the query, so a consumer
+  can lock a group row (`GetQuery().LockForUpdate()`) as it could through the
+  generic builder of v0.4.2. Without it the only way in was `Base()`, which
+  `aru doctor` refuses outside the package that declares the entity.
+
 ## [0.5.0] - 2026-10-03
 
 ### Changed
