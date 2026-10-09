@@ -10,6 +10,15 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-09
+
+### Changed
+
+- Require Framework `v0.55.1`, Hesape `v0.52.0` and Kyse `v0.33.0`; the SQLite
+  connector stays at `v0.11.0`. `arandu.mod.toml` declares
+  `framework = ">= 0.55"`. Routes, migrations, actions, policy decisions, tenant
+  scoping and the published views are unchanged.
+
 ## [0.5.2] - 2026-10-09
 
 ### Changed

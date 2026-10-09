@@ -1,5 +1,27 @@
 # Upgrade Guide
 
+## v0.5.3
+
+### Requiring this version moves an application to Framework v0.55.1, Hesape v0.52.0 and Kyse v0.33.0
+
+No symbol of this package changed. What can stop an application is the
+dependencies it now selects, so follow their upgrade notes between the versions
+you had and these:
+
+- Framework `v0.55`: `Configuration.Session` is replaced by
+  `bootstrap.Session{Secure, Lifetime}`, and a `SESSION_*` variable the session
+  store does not read stops the boot.
+- Framework `v0.54`: a boolean setting that does not read as one stops the boot.
+- Framework `v0.53`: a cookie is `Secure` unless the environment is `dev`.
+- Hesape `v0.52`: the names promised for removal are gone, and the
+  `SessionManager` path is deprecated.
+- Kyse `v0.30` to `v0.33`: `DataTable` drops the query string of `URL`, and
+  `Attrs` no longer replaces an attribute a component writes. The views this
+  package publishes do neither, so a copy you have not edited keeps rendering
+  as it did.
+
+The manifest floor is `framework = ">= 0.55"`.
+
 ## v0.5.2
 
 Nothing to change in an application: this release touches skills, not Go code.
