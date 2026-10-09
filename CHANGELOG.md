@@ -10,6 +10,14 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-09
+
+### Changed
+
+- The `permission-package` skill carries `audience: app` under `metadata` in its
+  frontmatter, which is what `aru skills:sync` reads to copy it into an
+  application whose `go.mod` requires this package. No other skill is marked.
+
 ## [0.5.1] - 2026-10-04
 
 ### Fixed

@@ -1,5 +1,11 @@
 # Upgrade Guide
 
+## v0.5.2
+
+Nothing to change in an application: this release touches skills, not Go code.
+`aru skills:sync` now offers `permission-package` to a project that requires
+this version.
+
 ## v0.5.1
 
 ### A group row can be locked again
