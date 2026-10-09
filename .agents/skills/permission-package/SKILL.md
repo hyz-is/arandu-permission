@@ -2,6 +2,8 @@
 name: permission-package
 description: Install, wire and use the Arandu Permission package (Go, Arandu) in an application. Use when the request is to "install Arandu Permission", "add permission to the app", "go get github.com/hyz-is/arandu-permission", "wire it into bootstrap/app.go", "register the module", "use the permission routes", "everything under /permission returns 403", "403 forbidden from permission", "the table does not exist", "no such table", "change where it is mounted", "let admins read it", or when a project's go.mod already requires github.com/hyz-is/arandu-permission. Covers the three lines of wiring and where each one goes, the Config fields and which one is required, the routes and their names, why the policy refuses everything until somebody opens it, and the migration step that is not optional.
 license: MIT
+metadata:
+  audience: app
 ---
 
 # Using Arandu Permission
