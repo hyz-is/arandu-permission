@@ -10,6 +10,29 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-09
+
+### Fixed
+
+- The layout links around the screens are filled. The brand, sign-in,
+  sign-out and register links come from the routes the application named
+  `home`, `auth.login`, `auth.logout` and `auth.register`, as on the
+  application's own screens, instead of being drawn as `href=""`. A signed-in
+  administrator was offered a Sign out link with nowhere to go. A route the
+  application did not register draws no link.
+- The forms carry the CSRF token `middleware.CSRFProtect` issued for the
+  request. The screens issued their own from the session id with the issuer
+  handed to `New`, so they worked only while the application kept that issuer
+  in step with the one the middleware checks against. The page is now built
+  with `view.New`.
+- The screens carry the messages and the typed input of a rejected attempt
+  from the flash, which `view.New` reads.
+
+### Deprecated
+
+- The `csrf` argument of `New`. It is no longer read, and `New` no longer
+  refuses `nil`.
+
 ## [0.5.3] - 2026-10-09
 
 ### Changed

@@ -1,5 +1,40 @@
 # Upgrade Guide
 
+## v0.5.4
+
+No symbol is removed or changed, and no route, migration, action, policy
+decision or tenant rule changes. The published views do not change, so nothing
+is republished.
+
+### The `csrf` argument of `New` is not read
+
+The screens take the CSRF token `middleware.CSRFProtect` put on the request,
+so the issuer passed to `New` is ignored and `nil` is accepted. Pass `nil`:
+
+```go
+permission.New(permission.Config{
+	Tenant:  cfg.Auth.Tenant,
+	Actions: append(myapp.Actions(), permission.Actions()...),
+}, db, sessions, nil) // was: sessions, csrf)
+```
+
+Passing an issuer still compiles and changes nothing. The parameter stays
+until a minor release that may change the signature.
+
+### The routes have to sit behind `CSRFProtect`
+
+The application skeleton mounts it for every route, so a project made from it
+has nothing to do. Outside it the screens draw an empty token, and nothing
+checks the writes they send either: mount the module's routes behind
+`CSRFProtect`.
+
+### The layout links
+
+The brand, sign-in, sign-out and register links are read from the routes named
+`home`, `auth.login`, `auth.logout` and `auth.register`. An application that
+registered those under other names sees the links empty on these screens, as
+it does on its own screens built with `view.New`.
+
 ## v0.5.3
 
 ### Requiring this version moves an application to Framework v0.55.1, Hesape v0.52.0 and Kyse v0.33.0
