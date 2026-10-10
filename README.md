@@ -41,11 +41,15 @@ The construction, in `Build`, after the session store exists and before
 	permissionModule, err := permission.New(permission.Config{
 		Tenant:  cfg.Auth.Tenant,
 		Actions: append(myapp.Actions(), permission.Actions()...),
-	}, db, sessions, csrf)
+	}, db, sessions, nil)
 	if err != nil {
 		return App{}, err
 	}
 ```
+
+The last argument is not read; pass `nil`. The forms on these screens carry the
+token `middleware.CSRFProtect` issued for the request, not one this package
+issues.
 
 And the registration, inside the `k.Register(...)` call already there:
 
@@ -104,6 +108,13 @@ and import the directory it wrote into, with the other imports:
 Without that import the views are not in the binary, and the module refuses to
 boot rather than answering the first request that reaches one of them with a
 500. The refusal names the view, the command and the import.
+
+The screens are drawn inside your layout with the `view.Page` that `view.New`
+builds for your own. The CSRF token is the one `middleware.CSRFProtect` issued
+for the request, so the routes have to sit behind it, as every route of the
+application skeleton does. The brand, sign-in, sign-out and register links come
+from the routes you named `home`, `auth.login`, `auth.logout` and
+`auth.register`; one you did not register draws no link.
 
 ## Configuration
 

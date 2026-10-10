@@ -93,7 +93,9 @@ func run(ctx context.Context) error {
 	},
 		data.Wrap(pool, data.DialectSQLite),
 		security.NewSessionStore(key, time.Hour, false, security.NewMemoryBackend()),
-		security.NewCSRF(key, time.Hour),
+		// Not read: the forms carry the token the middleware that protects
+		// forms issued for the request.
+		nil,
 	)
 	if err != nil {
 		return err

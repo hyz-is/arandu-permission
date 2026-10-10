@@ -39,11 +39,15 @@ The construction, in `Build`, after the session store exists and before
 	permissionModule, err := permission.New(permission.Config{
 		Tenant:  cfg.Auth.Tenant,
 		Actions: append(myapp.Actions(), permission.Actions()...),
-	}, db, sessions, csrf)
+	}, db, sessions, nil)
 	if err != nil {
 		return App{}, err
 	}
 ```
+
+The last argument is not read; pass `nil`. The forms on these screens carry the
+token `middleware.CSRFProtect` issued for the request, not one this package
+issues.
 
 And the registration, inside the `k.Register(...)` call already there:
 
