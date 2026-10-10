@@ -1,5 +1,34 @@
 # Upgrade Guide
 
+## v0.5.5
+
+No symbol of this package changed, and no route, migration, action, policy
+decision or tenant rule changes. The published views do not change, so nothing
+is republished.
+
+### Requiring this version moves an application to Framework v0.56.0, Hesape v0.54.0 and Kyse v0.34.1
+
+Follow their upgrade notes between the versions you had and these:
+
+- Framework `v0.56`: `config.Config.SessionTTL` is removed and `config.Load`
+  no longer reads `SESSION_TTL`; an application on the boot path writes the
+  lifetime in minutes as `SESSION_LIFETIME`. The Application puts `APP_NAME`
+  on every request.
+- Hesape `v0.54`: `view.New` fills `AppName` from the request. Hesape `v0.53`:
+  `mask.Pattern.Accepts` takes the raw value as well as the formatted one.
+- Kyse `v0.34`: `OneTimeCode` and `Masked` draw markup that submits without
+  script. The views this package publishes use neither, so a copy you have not
+  edited keeps rendering as it did.
+
+The manifest floor is `framework = ">= 0.56"`.
+
+### The brand on these screens is your `APP_NAME`
+
+The screens drew an empty brand, because a module does not read the
+application's configuration. They now draw the name the Application puts on
+the request. Set `APP_NAME`: left unset it reads `arandu-app`. Nothing in the
+wiring passes a name to this package.
+
 ## v0.5.4
 
 No symbol is removed or changed, and no route, migration, action, policy

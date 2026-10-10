@@ -10,6 +10,21 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-09
+
+### Changed
+
+- Require Framework `v0.56.0`, Hesape `v0.54.0` and Kyse `v0.34.1`; the SQLite
+  connector stays at `v0.11.0`. `arandu.mod.toml` declares
+  `framework = ">= 0.56"`. Routes, migrations, actions, policy decisions,
+  tenant scoping and the published views are unchanged.
+
+### Fixed
+
+- The brand on the screens reads the application's `APP_NAME`, which the
+  Application puts on every request and `view.New` reads. It was drawn empty:
+  the module never knew the name, and still takes none.
+
 ## [0.5.4] - 2026-10-09
 
 ### Fixed
