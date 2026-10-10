@@ -100,7 +100,6 @@ type Module struct {
 	svc      *PermissionService
 	roles    *Resolver
 	sessions *security.SessionStore
-	csrf     *security.CSRF
 }
 
 // Compile-time proof that the module honors the contracts it claims.
@@ -120,6 +119,14 @@ var (
 // It returns an error rather than panicking or carrying on, because everything
 // it refuses is a wiring mistake, and a wiring mistake found at boot costs one
 // restart. The same mistake found later is a request that reached a nil handle.
+//
+// csrf is not read, and nil is accepted: pass nil. The token every form on these
+// screens carries is the one the middleware that protects forms issued for the
+// request, read off its context. That middleware is the one that checks the
+// submission, so it is the one whose binding and key the token has to carry,
+// and an issuer handed to this package is a second one the application would
+// have to keep in step with it. The parameter stays so that a wiring which
+// passes one keeps compiling.
 func New(cfg Config, db *data.DB, sessions *security.SessionStore, csrf *security.CSRF) (*Module, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -129,9 +136,6 @@ func New(cfg Config, db *data.DB, sessions *security.SessionStore, csrf *securit
 	}
 	if sessions == nil {
 		return nil, errors.New("permission: New needs a session store: it is where the subject comes from, and a request with no subject cannot be authorized")
-	}
-	if csrf == nil {
-		return nil, errors.New("permission: New needs the CSRF issuer: every screen here writes, and a form with no token is a form the application refuses")
 	}
 
 	catalogue, err := NewCatalogue(cfg.Actions...)
@@ -145,7 +149,6 @@ func New(cfg Config, db *data.DB, sessions *security.SessionStore, csrf *securit
 		svc:      service,
 		roles:    NewResolver(service, cfg.CacheSize),
 		sessions: sessions,
-		csrf:     csrf,
 	}, nil
 }
 
@@ -863,22 +866,23 @@ func (m *Module) locale(r *stdhttp.Request) string {
 }
 
 // page is the chrome the application's layout draws around a screen.
+//
+// It is the page view.New builds for every screen of the application, so these
+// screens carry what the application's own carry and by the same rule. The CSRF
+// token is the one the middleware that protects forms issued for this request
+// and put on its context: it is bound to whatever that middleware binds to --
+// the session, or the guest cookie of a visitor who has none -- and signed with
+// the key it checks the submission against. A token issued here would be a
+// second issuer the application has to keep in step with that one. The
+// navigation targets come from the route table, by the names view.New
+// documents, so a route the application never registered draws no link.
+//
+// Authenticated is the one field set after New, from the subject this module
+// reads, so the screen and the decisions behind it agree on who is signed in.
 func (m *Module) page(ctx *fhttp.Context, title string) hview.Page {
-	actor := m.subject(ctx.Request)
-	token, err := m.csrf.Issue(m.sessions.IDFromRequest(ctx.Request))
-	if err != nil {
-		// An unissued token is left empty rather than reported. The page still
-		// renders and every form on it is refused, which is what a missing
-		// session means -- and the alternative, failing the read because the
-		// write would fail, is a blank screen where a sign-in prompt belongs.
-		token = ""
-	}
-	return hview.Page{
-		Title:         title,
-		Token:         token,
-		Authenticated: actor.ID != "",
-		Path:          ctx.Request.URL.Path,
-	}
+	page := hview.New(ctx, title)
+	page.Authenticated = m.subject(ctx.Request).ID != ""
+	return page
 }
 
 // answer turns what the service refused into something the client can act on.

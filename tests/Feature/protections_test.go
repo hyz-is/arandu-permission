@@ -585,8 +585,7 @@ func signedIn(t *testing.T, handle *data.DB, userID string) (*fhttp.Router, stri
 	t.Helper()
 
 	sessions := security.NewSessionStore([]byte(appKey), time.Hour, false, security.NewMemoryBackend())
-	csrf := security.NewCSRF([]byte(appKey), time.Hour)
-	module, err := permission.New(settings(), handle, sessions, csrf)
+	module, err := permission.New(settings(), handle, sessions, nil)
 	if err != nil {
 		t.Fatalf("building the module: %v", err)
 	}

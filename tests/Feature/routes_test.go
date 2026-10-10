@@ -57,8 +57,7 @@ func build(t *testing.T, cfg permission.Config, db *data.DB) (*permission.Module
 	t.Helper()
 
 	sessions := security.NewSessionStore([]byte(appKey), time.Hour, false, security.NewMemoryBackend())
-	csrf := security.NewCSRF([]byte(appKey), time.Hour)
-	return permission.New(cfg, db, sessions, csrf)
+	return permission.New(cfg, db, sessions, nil)
 }
 
 // settings is a configuration that works, with a catalogue holding this
@@ -232,24 +231,25 @@ func TestNewRefusesAWiringThatCannotWork(t *testing.T) {
 	t.Parallel()
 
 	sessions := security.NewSessionStore([]byte(appKey), time.Hour, false, security.NewMemoryBackend())
-	csrf := security.NewCSRF([]byte(appKey), time.Hour)
 	handle := data.Wrap(nil, data.DialectSQLite)
 	valid := settings()
 
-	if _, err := permission.New(permission.Config{}, handle, sessions, csrf); err == nil {
+	if _, err := permission.New(permission.Config{}, handle, sessions, nil); err == nil {
 		t.Error("a configuration with no tenant was accepted")
 	}
-	if _, err := permission.New(valid, nil, sessions, csrf); err == nil {
+	if _, err := permission.New(valid, nil, sessions, nil); err == nil {
 		t.Error("a nil database handle was accepted")
 	}
-	if _, err := permission.New(valid, handle, nil, csrf); err == nil {
+	if _, err := permission.New(valid, handle, nil, nil); err == nil {
 		t.Error("a nil session store was accepted")
 	}
-	if _, err := permission.New(valid, handle, sessions, nil); err == nil {
-		t.Error("a nil CSRF issuer was accepted")
-	}
-	if _, err := permission.New(valid, handle, sessions, csrf); err != nil {
+	if _, err := permission.New(valid, handle, sessions, nil); err != nil {
 		t.Fatalf("a valid wiring was refused: %v", err)
+	}
+
+	// An issuer is not read, and a wiring that still passes one keeps building.
+	if _, err := permission.New(valid, handle, sessions, security.NewCSRF([]byte(appKey), time.Hour)); err != nil {
+		t.Fatalf("a wiring that passes a CSRF issuer was refused: %v", err)
 	}
 }
 

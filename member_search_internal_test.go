@@ -21,8 +21,7 @@ func TestMemberSearchNarrowsBothPermissionSourcesBeforeUnion(t *testing.T) {
 	t.Cleanup(func() { _ = pool.Close() })
 	handle := data.Wrap(pool, data.DialectSQLite)
 	sessions := security.NewSessionStore([]byte("0123456789abcdef0123456789abcdef"), time.Hour, false, security.NewMemoryBackend())
-	csrf := security.NewCSRF([]byte("0123456789abcdef0123456789abcdef"), time.Hour)
-	mod, err := New(Config{Tenant: "acme", Actions: append(Actions(), "invoice.delete")}, handle, sessions, csrf)
+	mod, err := New(Config{Tenant: "acme", Actions: append(Actions(), "invoice.delete")}, handle, sessions, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

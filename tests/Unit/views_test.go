@@ -44,11 +44,10 @@ func module(t *testing.T) *permission.Module {
 	t.Helper()
 
 	sessions := security.NewSessionStore([]byte(sessionKey), time.Hour, false, security.NewMemoryBackend())
-	csrf := security.NewCSRF([]byte(sessionKey), time.Hour)
 	m, err := permission.New(permission.Config{
 		Tenant:  "acme",
 		Actions: permission.Actions(),
-	}, data.Wrap(nil, data.DialectSQLite), sessions, csrf)
+	}, data.Wrap(nil, data.DialectSQLite), sessions, nil)
 	if err != nil {
 		t.Fatalf("building the module: %v", err)
 	}
