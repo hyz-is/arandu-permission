@@ -114,7 +114,9 @@ builds for your own. The CSRF token is the one `middleware.CSRFProtect` issued
 for the request, so the routes have to sit behind it, as every route of the
 application skeleton does. The brand, sign-in, sign-out and register links come
 from the routes you named `home`, `auth.login`, `auth.logout` and
-`auth.register`; one you did not register draws no link.
+`auth.register`; one you did not register draws no link. The brand reads your
+`APP_NAME`, which the Application puts on every request; the module carries no
+name of its own, and nothing in the wiring passes one.
 
 ## Configuration
 
