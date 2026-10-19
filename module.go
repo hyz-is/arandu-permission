@@ -948,7 +948,17 @@ func (m *Module) answer(ctx *fhttp.Context, err error) error {
 // They are returned in the order their names sort in, which is the order they
 // apply in: the name carries the order, and nothing else decides it.
 func (m *Module) Migrations() []foundation.Migration {
-	return []foundation.Migration{createPermissionTables{}, createPermissionUserActions{}}
+	return []foundation.Migration{createPermissionTables{}, createPermissionUserActions{}, widenPermissionTimePrecision}
+}
+
+// widenPermissionTimePrecision raises the groups table's two instants to
+// microseconds where an earlier framework default created them in whole
+// seconds, which PostgreSQL rounds a value to and MySQL truncates it to. A
+// column already in microseconds is left alone, SQLite has nothing to widen,
+// and the rollback keeps the columns wide.
+var widenPermissionTimePrecision = migrations.WidenTimePrecision{
+	Name:   "20261019_0003_widen_permission_time_precision",
+	Tables: []string{GroupsTable},
 }
 
 // The migration is reversible, and the assertion is here rather than discovered

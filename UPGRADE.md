@@ -1,5 +1,21 @@
 # Upgrade Guide
 
+## v0.6.0
+
+Run `aru migrate`: `20261019_0003_widen_permission_time_precision` raises the
+groups table's two instants from whole seconds to microseconds where a release
+before Hesape v0.67.0 created them so. On PostgreSQL it changes the type
+modifier only and rewrites neither the table nor its indexes; on MySQL the
+columns are restated with `MODIFY`. No row changes. A process still running the
+previous binary may see PostgreSQL refuse a cached plan over the table once per
+connection ("cached plan must not change result type"): migrate before the new
+binary starts.
+
+This release selects Framework `v0.58.0` and Hesape `v0.69.0`; follow their
+upgrade notes between the versions you had and these. No symbol, route,
+action or view of this package changes, and the manifest floor is
+`framework = ">= 0.58"`.
+
 ## v0.5.5
 
 No symbol of this package changed, and no route, migration, action, policy

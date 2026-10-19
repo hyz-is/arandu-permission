@@ -10,6 +10,24 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-19
+
+### Added
+
+- The migration `20261019_0003_widen_permission_time_precision`: the groups
+  table's `created_at` and `updated_at`, which an earlier framework default
+  created in whole seconds -- PostgreSQL rounds a value to the second there,
+  MySQL truncates it -- are raised to microseconds through Hesape's
+  `migrations.WidenTimePrecision`. A column already in microseconds is left
+  alone, SQLite has nothing to widen, and the rollback keeps the columns wide.
+
+### Changed
+
+- Require Framework `v0.58.0` and Hesape `v0.69.0`, whose schema declares a
+  date-time column in microseconds by default; the SQLite connector stays at
+  `v0.11.0`, and the PostgreSQL connector `v0.11.0` is required by the suite
+  only. `arandu.mod.toml` declares `framework = ">= 0.58"`.
+
 ## [0.5.5] - 2026-10-09
 
 ### Changed
