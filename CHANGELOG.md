@@ -10,6 +10,25 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-23
+
+### Added
+
+- `github.com/hyz-is/arandu-permission/conformance`: `Permissions(t, open)`, the
+  kit an application calls from `tests/Conformance`. It signs in for real and
+  proves that a group's actions reach the application's guard only inside its
+  organization, that nobody grants what they do not hold or puts themselves in
+  a group, that a revocation holds on the next request, and that every screen
+  refuses a reader without a Grant.
+
+### Changed
+
+- Require Framework `v0.64.0` and Hesape `v0.84.1`; the manifest floor is
+  `framework = ">= 0.64"`.
+- The four policies implement `auth.Writes`, so a Grant issued for
+  `permission.view`, `permission.list` or `permission.resolve` cannot write.
+- CI runs the suite against PostgreSQL through `ARANDU_TEST_DATABASE_URL`.
+
 ## [0.6.0] - 2026-10-19
 
 ### Added

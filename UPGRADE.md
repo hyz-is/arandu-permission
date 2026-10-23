@@ -1,10 +1,10 @@
 # Upgrade Guide
 
-## Unreleased
+## v0.7.0
 
-### Requiring this version moves an application to Framework v0.63.0 and Hesape v0.84.0
+### Requiring this version moves an application to Framework v0.64.0 and Hesape v0.84.1
 
-This release selects Framework `v0.63.0` and Hesape `v0.84.0`; the SQLite and
+This release selects Framework `v0.64.0` and Hesape `v0.84.1`; the SQLite and
 PostgreSQL connectors stay at `v0.11.0`, the latest published. Follow their
 upgrade notes between the versions you had and these. The ones an application
 that installs this package notices:
@@ -21,8 +21,9 @@ that installs this package notices:
   refused on every write with `auth.ErrReadGrant`.
 - Framework `v0.63`: `view.Layout` is `hesape/view.Layout`, and the test kit
   is `github.com/arandu-io/framework/test`; `hesape/arandutest` is deprecated.
+- Framework `v0.64`: `config.Load` also reads an unset `APP_ENV` as production.
 
-The manifest floor is `framework = ">= 0.63"`.
+The manifest floor is `framework = ">= 0.64"`.
 
 `apidiff` reports `(*Module).Routes` and `New` as changed, and their spelling
 is the same: Framework `v0.60` made `http.Router` an alias of Hesape's
