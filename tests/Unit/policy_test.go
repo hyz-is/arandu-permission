@@ -43,6 +43,8 @@ var everyAction = []security.Action{
 	permission.PermissionRevoke,
 	permission.PermissionAssign,
 	permission.PermissionUnassign,
+	permission.PermissionGrantDirect,
+	permission.PermissionRevokeDirect,
 	permission.PermissionResolve,
 }
 
@@ -543,6 +545,30 @@ func TestTheResolvableActionIsNotGrantable(t *testing.T) {
 	for _, action := range permission.Actions() {
 		if action == permission.PermissionResolve {
 			t.Fatal("permission.resolve is offered as grantable, and granting it grants nothing")
+		}
+	}
+}
+
+// TestEveryActionIsWhatThePackageDeclares keeps everyAction equal to the
+// actions the package declares, so an action added to policy.go is walked by
+// the default-deny tests the day it is added.
+func TestEveryActionIsWhatThePackageDeclares(t *testing.T) {
+	t.Parallel()
+
+	declared := map[security.Action]bool{permission.PermissionResolve: true}
+	for _, action := range permission.Actions() {
+		declared[action] = true
+	}
+	walked := map[security.Action]bool{}
+	for _, action := range everyAction {
+		walked[action] = true
+		if !declared[action] {
+			t.Errorf("everyAction holds %s, which the package does not declare", action)
+		}
+	}
+	for action := range declared {
+		if !walked[action] {
+			t.Errorf("everyAction leaves out %s, so no default-deny test walks it", action)
 		}
 	}
 }
