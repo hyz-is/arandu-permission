@@ -63,7 +63,8 @@ this one must prove about itself it proves in its own suite or nowhere.
 | | measured with |
 | --- | --- |
 | 11 Go files, one per role, and 5 generated query files, all in one package at the root | `ls *.go \| grep -vc _test.go` |
-| 16 test files | `find tests -name '*_test.go' \| wc -l` |
+| 2 files of the conformance kit an application runs, in `conformance/` | `ls conformance/*.go \| grep -vc doc.go` |
+| 25 test files | `find tests -name '*_test.go' \| wc -l` |
 | 14 routes | `grep -c 'guarded.Action' module.go` |
 | 12 actions the policies answer about | `grep -cE '^\t[A-Za-z]+ security.Action = ' policy.go` |
 | 8 commands | `grep -c '^\t\t\tRun:' command.go` |
@@ -190,7 +191,9 @@ name of another repository does not.
 
 Tests go under `tests/`, in a capitalized category directory declaring a
 lowercase external package: `tests/Unit` holds `package unit_test`,
-`tests/Feature` holds `package feature_test`. Both import the package by its
-module path, which is what makes them see exactly what a caller sees. A test
-that genuinely needs something unexported goes beside the code as
+`tests/Feature` holds `package feature_test`, and `tests/Conformance` holds
+`package conformance_test`, which runs the kit in `conformance/` against the
+smallest application wired the way the README teaches. All three import the
+package by its module path, which is what makes them see exactly what a caller
+sees. A test that genuinely needs something unexported goes beside the code as
 `*_internal_test.go`, and the suffix is how it says so.

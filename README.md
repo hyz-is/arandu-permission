@@ -351,6 +351,29 @@ The denial suite constructs the Service with a nil database, so even building
 `Groups(nil)` would panic. The structural twin reads the allowed path and
 rejects any Service method that reaches the Model before `Authorize`.
 
+## Prove the wiring in your application
+
+This package's suite proves the policies against rows; it cannot prove the
+application around them. `github.com/hyz-is/arandu-permission/conformance`
+does, in one call from the application's `tests/Conformance`:
+
+```go
+func TestPermission(t *testing.T) { conformance.Permissions(t, tests.PermissionFixture) }
+```
+
+The fixture is built from the application's own boot: the server
+`framework/test` `Serve` booted, the handler that boot returned, the
+permission module it registered, two tenants with no group yet, a function
+that creates an account the application signs in, and one route of the
+application's own that requires an action of its catalogue. The kit signs
+people in with `test.As` and proves that a group's action reaches that route
+only inside its organization, whatever the request names; that nobody grants
+what they do not hold, puts themselves into a group or gives themselves a
+permission, and nothing is written when they try; that a revoked action is
+gone on the next request; and that every screen refuses a visitor, an account
+with no permission and an administrator of another tenant.
+`tests/Conformance/permission_test.go` is a complete fixture.
+
 ## Licence
 
 MIT. See [LICENSE.md](LICENSE.md). Copyright Paulo R. Lima.

@@ -162,6 +162,32 @@ Anything else is a 500 and the framework's error page in development. The
 package returns unexpected errors rather than swallowing them, so a route that
 answers 200 with an empty body is not something it does.
 
+## Prove the wiring from tests/Conformance
+
+One line, and a fixture built from the application's own boot. Do not copy the
+package's tests into the application; call the kit:
+
+```go
+import permconformance "github.com/hyz-is/arandu-permission/conformance"
+
+func TestPermission(t *testing.T) { permconformance.Permissions(t, tests.PermissionFixture) }
+```
+
+`PermissionFixture(t)` serves the application with `test.Serve` and returns a
+`permconformance.Fixture`: the server, the `Handler` of the
+`test.Application` the boot returned, the `*permission.Module` that boot
+registered, two tenants with no group yet, an `Account(t, tenant)` that
+creates an account the application's resolver knows, an optional `Join` for
+an application whose accounts belong to several organizations, and `Guarded`
+— a GET route of the application, by name, that requires an action of its
+catalogue. `tests/Conformance/permission_test.go` in the package is a complete
+example.
+
+**Symptom to recognise:** the first subtest says the guarded route refused a
+member of a group carrying its action. `Roles()` is not mounted between the
+session and the guard, or the guard decides on something other than
+`subject.Can`.
+
 ## Reporting a problem
 
 Issues and pull requests go to the repository the module path names,

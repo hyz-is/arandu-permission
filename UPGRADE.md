@@ -36,6 +36,25 @@ it does changes. Code of your own that authorizes one of these policies to read
 and then writes with that Grant fails with 403 from this version: authorize the
 action that writes before writing.
 
+### A conformance kit replaces the tests an application copied
+
+`github.com/hyz-is/arandu-permission/conformance` is new, and nothing changes
+until an application calls it. An application that copied this package's
+protection tests into its own suite deletes them and calls the kit from
+`tests/Conformance` instead:
+
+```go
+func TestPermission(t *testing.T) { conformance.Permissions(t, tests.PermissionFixture) }
+```
+
+The fixture is built from the application's boot through `framework/test`
+(`Serve`, and the `Handler` of the `test.Application` it returned), the
+`*permission.Module` that boot registered, two tenants with no group yet, an
+`Account` constructor and one route of the application's own guarded by an
+action of its catalogue. The kit refuses a tenant that already has a group, so
+a boot that seeds the first group does it outside the server the fixture
+serves.
+
 ## v0.6.0
 
 Run `aru migrate`: `20261019_0003_widen_permission_time_precision` raises the
