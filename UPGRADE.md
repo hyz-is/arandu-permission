@@ -24,6 +24,18 @@ that installs this package notices:
 
 The manifest floor is `framework = ">= 0.63"`.
 
+### A Grant issued for reading a permission cannot write
+
+`GroupPolicy`, `ActionPolicy`, `MembershipPolicy` and `UserActionPolicy`
+implement `auth.Writes`. A Grant `security.Authorize` issues through one of
+them for `permission.view`, `permission.list` or `permission.resolve` only
+reads: a save, a delete, a cache write or an outbox row made with it is refused
+with `auth.ErrReadGrant`, which wraps `security.ErrForbidden`. The package's
+own service writes only under the Grants of the actions that write, so nothing
+it does changes. Code of your own that authorizes one of these policies to read
+and then writes with that Grant fails with 403 from this version: authorize the
+action that writes before writing.
+
 ## v0.6.0
 
 Run `aru migrate`: `20261019_0003_widen_permission_time_precision` raises the

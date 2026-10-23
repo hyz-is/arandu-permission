@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/arandu-io/framework/security"
+	"github.com/arandu-io/hesape/auth"
 )
 
 // The actions of this package.
@@ -80,6 +81,32 @@ func Actions() []security.Action {
 	}
 }
 
+// writes reports whether an action of this package changes a row.
+//
+// The set is closed and written out: an action added later reads until it is
+// named here, so a Grant issued for it cannot write by accident. Every policy
+// answers Writes from it, which is what has a Grant issued for reading --
+// permission.view, permission.list, permission.resolve -- refused by every
+// write the database, the cache or the outbox would otherwise accept with it.
+func writes(a security.Action) bool {
+	switch a {
+	case PermissionCreate, PermissionUpdate, PermissionDelete,
+		PermissionGrant, PermissionRevoke,
+		PermissionAssign, PermissionUnassign,
+		PermissionGrantDirect, PermissionRevokeDirect:
+		return true
+	}
+	return false
+}
+
+// Compile-time proof that every policy says which of its actions write.
+var (
+	_ auth.Writes = GroupPolicy{}
+	_ auth.Writes = ActionPolicy{}
+	_ auth.Writes = MembershipPolicy{}
+	_ auth.Writes = UserActionPolicy{}
+)
+
 // GroupPolicy decides who may administer a group.
 //
 // It is the only authority over a Group, and it decides from what the subject
@@ -91,6 +118,10 @@ type GroupPolicy struct{}
 
 // Compile-time proof that the policy answers about this entity and no other.
 var _ security.Policy[Group] = GroupPolicy{}
+
+// Writes reports whether a Grant issued for the action may write. Reading
+// actions issue Grants every write refuses with auth.ErrReadGrant.
+func (GroupPolicy) Writes(a security.Action) bool { return writes(a) }
 
 // Can decides whether the subject may perform the action on the group.
 func (GroupPolicy) Can(_ context.Context, s security.Subject, a security.Action, record Group) error {
@@ -129,6 +160,10 @@ type ActionPolicy struct{}
 // Compile-time proof that the policy answers about this entity and no other.
 var _ security.Policy[GroupAction] = ActionPolicy{}
 
+// Writes reports whether a Grant issued for the action may write. Reading
+// actions issue Grants every write refuses with auth.ErrReadGrant.
+func (ActionPolicy) Writes(a security.Action) bool { return writes(a) }
+
 // Can decides whether the subject may attach or detach this action.
 func (ActionPolicy) Can(_ context.Context, s security.Subject, a security.Action, record GroupAction) error {
 	if record.TenantID != "" && record.TenantID != s.Tenant {
@@ -159,6 +194,10 @@ type MembershipPolicy struct{}
 
 // Compile-time proof that the policy answers about this entity and no other.
 var _ security.Policy[GroupUser] = MembershipPolicy{}
+
+// Writes reports whether a Grant issued for the action may write. Reading
+// actions issue Grants every write refuses with auth.ErrReadGrant.
+func (MembershipPolicy) Writes(a security.Action) bool { return writes(a) }
 
 // Can decides whether the subject may change or read this membership.
 func (MembershipPolicy) Can(_ context.Context, s security.Subject, a security.Action, record GroupUser) error {
@@ -201,6 +240,10 @@ type UserActionPolicy struct{}
 
 // Compile-time proof that the policy answers about this entity and no other.
 var _ security.Policy[UserAction] = UserActionPolicy{}
+
+// Writes reports whether a Grant issued for the action may write. Reading
+// actions issue Grants every write refuses with auth.ErrReadGrant.
+func (UserActionPolicy) Writes(a security.Action) bool { return writes(a) }
 
 // Can decides whether the subject may give this action to this person, take it
 // back, or read what they carry.
