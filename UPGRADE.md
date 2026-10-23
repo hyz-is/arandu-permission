@@ -1,5 +1,29 @@
 # Upgrade Guide
 
+## Unreleased
+
+### Requiring this version moves an application to Framework v0.63.0 and Hesape v0.84.0
+
+This release selects Framework `v0.63.0` and Hesape `v0.84.0`; the SQLite and
+PostgreSQL connectors stay at `v0.11.0`, the latest published. Follow their
+upgrade notes between the versions you had and these. The ones an application
+that installs this package notices:
+
+- Hesape `v0.77`: a `SessionStore` refuses to start a session for a subject
+  that carries roles or actions unless a resolver is installed with
+  `SessionStore.ResolveSubjects`. The subject this package's `Roles`
+  middleware fills in is never written to the session, so nothing here needs
+  one; an application that stores roles on its subjects installs it, as the
+  skeleton does.
+- Hesape `v0.76`: a missing `APP_ENV` reads as production, so the session
+  cookie is `Secure` and the debug page is off until `APP_ENV=dev` is written.
+- Hesape `v0.78`: a Grant issued for an action its Policy says only reads is
+  refused on every write with `auth.ErrReadGrant`.
+- Framework `v0.63`: `view.Layout` is `hesape/view.Layout`, and the test kit
+  is `github.com/arandu-io/framework/test`; `hesape/arandutest` is deprecated.
+
+The manifest floor is `framework = ">= 0.63"`.
+
 ## v0.6.0
 
 Run `aru migrate`: `20261019_0003_widen_permission_time_precision` raises the
