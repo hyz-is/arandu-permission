@@ -24,6 +24,14 @@ that installs this package notices:
 
 The manifest floor is `framework = ">= 0.63"`.
 
+`apidiff` reports `(*Module).Routes` and `New` as changed, and their spelling
+is the same: Framework `v0.60` made `http.Router` an alias of Hesape's
+`routing/controllers.Router` and `security.SessionStore` an alias of
+`hesape/http.SessionStore`, so the types under the names moved. A wiring that
+passes the router and the session store the framework hands it compiles as it
+did; one that named the old framework types next to the Hesape ones, in one
+type switch, sees one type.
+
 ### A Grant issued for reading a permission cannot write
 
 `GroupPolicy`, `ActionPolicy`, `MembershipPolicy` and `UserActionPolicy`
