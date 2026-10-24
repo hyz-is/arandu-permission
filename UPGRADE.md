@@ -1,5 +1,9 @@
 # Upgrade Guide
 
+## v0.7.1
+
+No API or database change: the release workflow tests over PostgreSQL.
+
 ## v0.7.0
 
 ### Requiring this version moves an application to Framework v0.64.0 and Hesape v0.84.1

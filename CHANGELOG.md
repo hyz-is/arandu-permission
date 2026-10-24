@@ -10,6 +10,15 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-23
+
+### Fixed
+
+- The release workflow tests the tag archive over PostgreSQL, as CI does. The
+  conformance suite added in `v0.7.0` refuses to skip without a database when
+  `CI` is set, so the `v0.7.0` release stopped before publishing its notes; the
+  module version itself is unchanged and `v0.7.1` carries the same code.
+
 ## [0.7.0] - 2026-10-23
 
 ### Added
