@@ -1,5 +1,24 @@
 # Upgrade Guide
 
+## Unreleased
+
+### Go 1.26.10 is the floor, with Framework v0.66.0 and Hesape v0.85.0
+
+`go.mod` declares `go 1.26.10`, because every vulnerability an application
+reaches through this package is in the standard library and fixed in that
+release (crypto/x509, net/http HTTP/2 and CONNECT, html/template,
+net/textproto, crypto/tls). A build with `GOTOOLCHAIN=auto` downloads it; a
+Docker build pins `golang:1.26.10` or newer.
+
+Requiring this version moves an application to Framework `v0.66.0` and Hesape
+`v0.85.0`; the SQLite and PostgreSQL connectors stay at `v0.11.0`, the latest
+published. Between `v0.64.0`/`v0.84.1` and these, Hesape `v0.84.2` stamps
+`created_at` and `updated_at` from the framework clock, so a test that freezes
+or travels in time moves them too. Nothing else an installer sees changed, and
+`apidiff` reports no incompatible change against `v0.7.1`.
+
+The manifest floor is `framework = ">= 0.66"`.
+
 ## v0.7.1
 
 No API or database change: the release workflow tests over PostgreSQL.
