@@ -1,6 +1,6 @@
 # Upgrade Guide
 
-## Unreleased
+## v0.8.0
 
 ### Go 1.26.10 is the floor, with Framework v0.66.0 and Hesape v0.85.0
 
