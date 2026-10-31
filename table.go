@@ -65,13 +65,3 @@ func (l Labels) Count(n int, entity string) string {
 	}
 	return strconv.Itoa(n) + " " + l.T("entity."+entity+form)
 }
-
-// Footer is what a table's footer says when it holds n rows of one entity:
-// "2 people.". A page that is not the last says so, because a count of the page
-// would otherwise read as a count of everybody.
-func (l Labels) Footer(n int, entity string, more bool) string {
-	if more {
-		return l.Count(n, entity) + ", " + l.T("table.more_pages") + "."
-	}
-	return l.Count(n, entity) + "."
-}

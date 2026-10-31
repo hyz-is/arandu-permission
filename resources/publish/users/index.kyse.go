@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/arandu-io/hesape/pagination"
 	"github.com/arandu-io/kyse/components"
 	permission "github.com/hyz-is/arandu-permission"
 )
@@ -61,10 +62,16 @@ func membersTable(data IndexData) components.DataTableProps {
 		rows = append(rows, components.TableRow{Key: person.UserID, Cells: cells})
 	}
 	// The finish every list has: the panel's own sentences, a footer that counts
-	// what the page holds with the noun in the right form (and says when it is
-	// not the last page), and an empty result that names who was looked for.
+	// the people with the noun in the right form, and an empty result that names
+	// who was looked for. The footer is drawn only where the size of the list is
+	// known, and it is when this page holds all of it: the first page, with none
+	// after it. A page of a longer list has no total to count, and says none.
 	lines := data.Labels.TableLines()
-	lines.Rows = data.Labels.Footer(len(rows), "person", data.Next != "")
+	lines.Rows = data.Labels.Count(len(rows), "person") + "."
+	var pager *pagination.LengthAwarePage
+	if data.Cursor == "" && data.Next == "" {
+		pager = pagination.NewLengthAwarePage(len(rows), len(rows), max(len(rows), 1), 1, pagination.Options{Path: data.Prefix + "/users"})
+	}
 	empty := components.EmptyProps{
 		Title: data.Labels.T("members.empty_title"),
 		Message: data.Labels.T("members.empty_message"),
@@ -88,9 +95,11 @@ func membersTable(data IndexData) components.DataTableProps {
 			{Label: data.Labels.T("member.direct_title"), Key: "direct", Hideable: true},
 		},
 		Rows: rows,
+		Paginator: pager,
 		HeaderMenu: true,
 		Lines: lines,
 		ColumnsLabel: data.Labels.T("control.columns"),
+		SelectedLabel: data.Labels.T("table.selected_label"),
 		Empty: empty,
 	}
 }

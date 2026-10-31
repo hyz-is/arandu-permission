@@ -10,6 +10,30 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-31
+
+### Fixed
+
+- The footer count that `v0.9.0` set on the people list and on the grid was
+  never drawn: Kyse draws the footer of a data table only where the size of the
+  whole list is known, and a cursor page knows none. The first page with no page
+  after it holds the whole list, and now hands the table a counted page, so
+  "2 people." is drawn there; a page of a longer list says no total, because it
+  has none.
+
+### Added
+
+- `MembersPageData.Cursor` and `MatrixPageData.Cursor`: the cursor the page was
+  read from, empty on the first page, which is how a view knows the page holds
+  the whole list.
+
+### Removed
+
+- `Labels.Footer`, added in `v0.9.0` the same day and used by no view that was
+  ever drawn: it counted a page that was not the last with "more on the next
+  page", which no footer could show. `Labels.Count` is what the views use, and
+  `permission.table.more_pages` goes with it.
+
 ## [0.9.0] - 2026-10-31
 
 ### Added

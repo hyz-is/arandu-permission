@@ -400,6 +400,10 @@ type MatrixPageData struct {
 	Labels Labels
 	Search string
 	Matrix MatrixView
+	// Cursor is the cursor this page was read from, and empty on the first. A
+	// first page with no Matrix.Next holds every group, which is when the table
+	// can say how many there are.
+	Cursor string
 }
 
 // SummaryPageData is what a bulk write would change, drawn before it is
@@ -449,6 +453,10 @@ type MembersPageData struct {
 	// Members are the rows, and Next is the cursor of the following page.
 	Members []MemberRef
 	Next    string
+	// Cursor is the cursor this page was read from, and empty on the first. A
+	// first page with no Next holds the whole list, which is when the table can
+	// say how many people there are.
+	Cursor string
 }
 
 // MemberPageData is one person's effective permissions and where each of them
@@ -666,6 +674,7 @@ func (m *Module) matrix(ctx *fhttp.Context) error {
 		Labels: labels,
 		Search: search,
 		Matrix: grid,
+		Cursor: ctx.Query("cursor"),
 	})
 }
 
@@ -698,6 +707,7 @@ func (m *Module) members(ctx *fhttp.Context) error {
 		Groups:  groups.Items,
 		Members: page.Items,
 		Next:    page.Next,
+		Cursor:  ctx.Query("cursor"),
 	})
 }
 

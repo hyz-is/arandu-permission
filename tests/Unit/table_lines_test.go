@@ -35,7 +35,7 @@ func TestEveryTableSentenceIsWrittenInEveryLocale(t *testing.T) {
 }
 
 // TestACountAgreesWithItsNoun is the footer's plural: one row is "1 person",
-// not "1 person(s)", and a page that is not the last says so.
+// not "1 person(s)".
 func TestACountAgreesWithItsNoun(t *testing.T) {
 	t.Parallel()
 
@@ -49,10 +49,6 @@ func TestACountAgreesWithItsNoun(t *testing.T) {
 		{pt.Count(1, "person"), "1 pessoa"},
 		{pt.Count(3, "person"), "3 pessoas"},
 		{pt.Count(1, "group"), "1 grupo"},
-		{en.Footer(2, "person", false), "2 people."},
-		{en.Footer(50, "person", true), "50 people, more on the next page."},
-		{pt.Footer(1, "group", false), "1 grupo."},
-		{pt.Footer(25, "group", true), "25 grupos, há mais na próxima página."},
 	} {
 		if c.got != c.want {
 			t.Errorf("got %q, want %q", c.got, c.want)
@@ -93,12 +89,12 @@ func TestTheListsHaveTheFinish(t *testing.T) {
 
 	for suffix, want := range map[string][]string{
 		"users/index.kyse.go": {
-			"data.Labels.TableLines()", `data.Labels.Footer(len(rows), "person", data.Next != "")`,
-			`data.Labels.T("members.none_found")`, "HeaderMenu: true", `"data-row-link"`,
+			"data.Labels.TableLines()", `data.Labels.Count(len(rows), "person") + "."`, "data.Cursor == \"\" && data.Next == \"\"", "Paginator: pager",
+			`data.Labels.T("members.none_found")`, "HeaderMenu: true", `"table.selected_label"`, `"data-row-link"`,
 		},
 		"matrix/index.kyse.go": {
-			"data.Labels.TableLines()", `data.Labels.Footer(len(rows), "group", data.Matrix.Next != "")`,
-			`data.Labels.T("matrix.none_found")`, "HeaderMenu:     true", `"data-row-link"`,
+			"data.Labels.TableLines()", `data.Labels.Count(len(rows), "group") + "."`, "data.Cursor == \"\" && data.Matrix.Next == \"\"", "Paginator:      pager",
+			`data.Labels.T("matrix.none_found")`, "HeaderMenu:     true", `"table.selected_label"`, `"data-row-link"`,
 		},
 	} {
 		source := read(suffix)

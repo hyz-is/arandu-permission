@@ -138,6 +138,6 @@
         "asc": "Asc",
         "desc": "Desc",
         "hide": "Hide",
-        "more_pages": "more on the next page"
+        "selected_label": "{n} of {total} rows selected."
     }
 }

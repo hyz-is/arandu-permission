@@ -1,5 +1,16 @@
 # Upgrade Guide
 
+## v0.10.0
+
+`Labels.Footer` is gone (it was added in `v0.9.0` and nothing could draw what it
+said); write `labels.Count(n, "person") + "."` where you used it. The two page
+data types gained a `Cursor` field, which the handlers fill and a project's
+republished `users/index.kyse.go` and `matrix/index.kyse.go` read to give the
+table a counted page when the page holds the whole list: copy the `pager` of the
+release into your own copy of those two views, or the footer count stays
+undrawn. `apidiff` against `v0.9.0` reports `Labels.Footer` removed and the two
+`Cursor` fields added, and nothing else changed. There is no migration.
+
 ## v0.9.0
 
 ### The views gained a finish, and the package imports Kyse

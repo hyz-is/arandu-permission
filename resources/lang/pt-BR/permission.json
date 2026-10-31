@@ -138,6 +138,6 @@
         "asc": "Crescente",
         "desc": "Decrescente",
         "hide": "Ocultar",
-        "more_pages": "há mais na próxima página"
+        "selected_label": "{n} de {total} linhas selecionadas"
     }
 }
