@@ -1,5 +1,34 @@
 # Upgrade Guide
 
+## v0.9.0
+
+### The views gained a finish, and the package imports Kyse
+
+`Labels` has three new methods (`TableLines`, `Count`, `Footer`) and the package
+now imports `github.com/arandu-io/kyse/components` to return the lines of a data
+table. An application that publishes this package's views compiles Kyse already;
+`go.mod` requires Kyse `v0.46.0` and Hesape `v0.89.2`, and Kyse `v0.45.0` is the
+first release whose data table has the `Lines` and `HeaderMenu` the views set.
+There is no migration, and `apidiff` reports no incompatible change against
+`v0.8.1`.
+
+The new sentences are shipped in the package (`permission.table.*`,
+`permission.entity.*`, `permission.members.none_found*`,
+`permission.matrix.none_found*`), in English and Portuguese, so nothing is
+copied into the project.
+
+What a project has to do is the one thing it always does with a view: the markup
+is its own, so republishing overwrites its copy. Compare `users/index.kyse.go` and
+`matrix/index.kyse.go` with the release and carry across what you changed; the
+other five views changed only in that the header of a page wraps on a phone
+(`flex-wrap` on the title row and on its links), which a project that made the
+same change has already. A project that does not republish keeps its views as
+they are and loses nothing: the new methods are unused by them.
+
+The header menu (`HeaderMenu`) opens on a sortable column, and neither list is
+sortable -- the people are read by identifier and the groups by slug, one cursor
+page at a time -- so the columns menu stays what hides a column.
+
 ## v0.8.1
 
 No API or database change: `Roles` mounted twice on one request resolves once.

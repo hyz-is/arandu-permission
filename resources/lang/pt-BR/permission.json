@@ -52,7 +52,9 @@
     },
     "matrix": {
         "title": "Grupos e permissões",
-        "lead": "Todos os grupos contra todas as permissões."
+        "lead": "Todos os grupos contra todas as permissões.",
+        "none_found": "Nenhum grupo encontrado.",
+        "none_found_message": "Confira a busca."
     },
     "member": {
         "title": "Permissões efetivas",
@@ -80,7 +82,9 @@
         "all_groups": "Todos os grupos",
         "direct_count": "diretas",
         "empty_title": "Ninguém ainda",
-        "empty_message": "Nenhum grupo tem membro e nada foi dado diretamente a ninguém."
+        "empty_message": "Nenhum grupo tem membro e nada foi dado diretamente a ninguém.",
+        "none_found": "Nenhuma pessoa encontrada.",
+        "none_found_message": "Confira a busca e o grupo escolhido."
     },
     "domain": {
         "permission": "Permissões"
@@ -97,5 +101,43 @@
         "permission.unassign": "Tirar alguém de um grupo",
         "permission.grant_direct": "Dar uma permissão diretamente a alguém",
         "permission.revoke_direct": "Retirar uma permissão direta"
+    },
+    "entity": {
+        "person_one": "pessoa",
+        "person_many": "pessoas",
+        "group_one": "grupo",
+        "group_many": "grupos"
+    },
+    "table": {
+        "filter": "Buscar em {label}...",
+        "no_result": "Nada encontrado.",
+        "rows": "{total} linha(s).",
+        "selected_count": "{n} linha(s) selecionada(s).",
+        "rows_per_page": "Linhas por página",
+        "page_of": "Página {n} de {total}",
+        "first": "Ir para a primeira página",
+        "previous": "Ir para a página anterior",
+        "next": "Ir para a próxima página",
+        "last": "Ir para a última página",
+        "back": "Anterior",
+        "forward": "Próxima",
+        "select_all": "Selecionar todas as linhas",
+        "select_row": "Selecionar linha",
+        "bulk": "Ações em lote",
+        "apply": "Aplicar filtros",
+        "ascending": "{column}, em ordem crescente",
+        "descending": "{column}, em ordem decrescente",
+        "unsorted": "{column}, sem ordem",
+        "reset": "Limpar",
+        "clear_filters": "Limpar filtros",
+        "no_facet_results": "Nada encontrado.",
+        "facet_selected": "{n} selecionados",
+        "open_menu": "Abrir menu",
+        "actions": "Ações",
+        "toggle_columns": "Alternar colunas",
+        "asc": "Crescente",
+        "desc": "Decrescente",
+        "hide": "Ocultar",
+        "more_pages": "há mais na próxima página"
     }
 }

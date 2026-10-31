@@ -17,7 +17,7 @@ type ShowData = permission.MemberPageData
 
 @section('content')
 	<section class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="flex items-start justify-between gap-4">
+	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("member.title") }}</h1>
 			<p class="text-muted-foreground mt-1 font-mono text-xs">{{ .Effective.UserID }}</p>

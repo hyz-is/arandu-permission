@@ -84,6 +84,7 @@ service.go      the rules and authorized Model access
 resolver.go     what a request carries into every policy, and the route guard
 event.go        what the application is told, once it has happened
 translation.go  the sentences a screen draws
+table.go        the sentences of a data table, and a count with its noun
 command.go      the same use cases, from a terminal
 views.go        the files the application takes ownership of
 ```

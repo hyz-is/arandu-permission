@@ -17,14 +17,14 @@ type IndexData = permission.CataloguePageData
 
 @section('content')
 	<section class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="flex items-start justify-between gap-4">
+	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("catalogue.title") }}</h1>
 			<p class="text-muted-foreground mt-1 max-w-prose text-sm">
 				{{ .Labels.T("catalogue.lead") }}
 			</p>
 		</div>
-		<nav class="flex items-center gap-2">
+		<nav class="flex flex-wrap items-center gap-2">
 			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/groups">{{ .Labels.T("groups.title") }}</a>
 			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/matrix">{{ .Labels.T("matrix.title") }}</a>
 		</nav>

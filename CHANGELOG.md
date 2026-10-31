@@ -10,6 +10,34 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-31
+
+### Added
+
+- `Labels.TableLines`, `Labels.Count` and `Labels.Footer`: the sentences of a
+  data table in the locale of the request (`permission.table.*`), a number with
+  its noun in the form that agrees with it (`permission.entity.*`: "1 person",
+  "2 people"), and the footer of a table that says when the page is not the last.
+  An application that wants other words writes the same keys in its own
+  catalogue, as for every other line of the panel.
+
+### Changed
+
+- The people list (`users/index`) and the groups-against-permissions grid
+  (`matrix/index`) have the finish every list of a Kyse application has: the
+  panel's own sentences for the search placeholder, the pager and the columns
+  menu instead of Kyse's English, a footer that counts what the page holds with
+  the right plural, an empty result that names who was looked for ("No person
+  found.") apart from the empty state of a panel with nobody in it, the header
+  menu, and an identifying cell that carries `data-row-link` so a script that
+  follows it makes the whole row lead to its record. The headers of the people,
+  the person, the groups, the group and the catalogue pages wrap on a narrow
+  screen, as the matrix's already did.
+- Require Kyse `v0.46.0` (Hesape `v0.89.2` with it): the views set `Lines` and
+  `HeaderMenu`, which Kyse draws from `v0.45.0`.
+- The suite compiles the published views in a project of its own with the view
+  compiler of `aru@v0.81.3` and no longer skips when nobody built them first.
+
 ## [0.8.1] - 2026-10-31
 
 ### Fixed

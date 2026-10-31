@@ -52,7 +52,9 @@
     },
     "matrix": {
         "title": "Groups and permissions",
-        "lead": "Every group against every permission."
+        "lead": "Every group against every permission.",
+        "none_found": "No group found.",
+        "none_found_message": "Check the search."
     },
     "member": {
         "title": "Effective permissions",
@@ -80,7 +82,9 @@
         "all_groups": "Every group",
         "direct_count": "direct",
         "empty_title": "Nobody yet",
-        "empty_message": "No group has a member and nothing has been given to anybody directly."
+        "empty_message": "No group has a member and nothing has been given to anybody directly.",
+        "none_found": "No person found.",
+        "none_found_message": "Check the search and the group chosen."
     },
     "domain": {
         "permission": "Permissions"
@@ -97,5 +101,43 @@
         "permission.unassign": "Take somebody out of a group",
         "permission.grant_direct": "Give somebody a permission directly",
         "permission.revoke_direct": "Take a direct permission back"
+    },
+    "entity": {
+        "person_one": "person",
+        "person_many": "people",
+        "group_one": "group",
+        "group_many": "groups"
+    },
+    "table": {
+        "filter": "Filter {label}...",
+        "no_result": "Nothing found.",
+        "rows": "{total} row(s).",
+        "selected_count": "{n} row(s) selected.",
+        "rows_per_page": "Rows per page",
+        "page_of": "Page {n} of {total}",
+        "first": "Go to first page",
+        "previous": "Go to previous page",
+        "next": "Go to next page",
+        "last": "Go to last page",
+        "back": "Previous",
+        "forward": "Next",
+        "select_all": "Select all rows",
+        "select_row": "Select row",
+        "bulk": "Bulk actions",
+        "apply": "Apply filters",
+        "ascending": "{column}, sorted ascending",
+        "descending": "{column}, sorted descending",
+        "unsorted": "{column}, not sorted",
+        "reset": "Reset",
+        "clear_filters": "Clear filters",
+        "no_facet_results": "Nothing found.",
+        "facet_selected": "{n} selected",
+        "open_menu": "Open menu",
+        "actions": "Actions",
+        "toggle_columns": "Toggle columns",
+        "asc": "Asc",
+        "desc": "Desc",
+        "hide": "Hide",
+        "more_pages": "more on the next page"
     }
 }

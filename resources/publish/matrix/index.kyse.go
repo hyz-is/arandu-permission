@@ -33,6 +33,9 @@ func matrixTable(data IndexData) components.DataTableProps {
 			Label:   row.Group.Slug,
 			URL:     data.Prefix + "/groups/" + row.Group.ID,
 			Variant: "hover",
+			// The identifying cell leads to the group, and a script that
+			// follows data-row-link makes the whole row do the same.
+			ComponentProps: components.ComponentProps{Attrs: components.Attrs{"data-row-link": ""}},
 		})
 		if row.System {
 			group = template.HTML(string(group) + " " + string(components.Badge(components.BadgeProps{
@@ -55,6 +58,24 @@ func matrixTable(data IndexData) components.DataTableProps {
 			Cells: cells,
 		})
 	}
+	// The finish every list has: the panel's own sentences, a footer that counts
+	// the groups the page holds with the noun in the right form (and says when it
+	// is not the last page), and an empty result that names who was looked for.
+	lines := data.Labels.TableLines()
+	lines.Rows = data.Labels.Footer(len(rows), "group", data.Matrix.Next != "")
+	empty := components.EmptyProps{
+		Title:       data.Labels.T("groups.empty_title"),
+		Message:     data.Labels.T("groups.empty_message"),
+		ActionLabel: data.Labels.T("control.create_group"),
+		ActionURL:   data.Prefix + "/groups",
+	}
+	if data.Search != "" {
+		lines.NoResult = data.Labels.T("matrix.none_found")
+		empty = components.EmptyProps{
+			Title:   data.Labels.T("matrix.none_found"),
+			Message: data.Labels.T("matrix.none_found_message"),
+		}
+	}
 	return components.DataTableProps{
 		ComponentProps: components.ComponentProps{Class: "mt-6"},
 		ID:             "permission-matrix",
@@ -64,13 +85,10 @@ func matrixTable(data IndexData) components.DataTableProps {
 		Columns:        columns,
 		Rows:           rows,
 		Navigable:      true,
+		HeaderMenu:     true,
+		Lines:          lines,
 		ColumnsLabel:   data.Labels.T("control.columns"),
-		Empty: components.EmptyProps{
-			Title:       data.Labels.T("groups.empty_title"),
-			Message:     data.Labels.T("groups.empty_message"),
-			ActionLabel: data.Labels.T("control.create_group"),
-			ActionURL:   data.Prefix + "/groups",
-		},
+		Empty:          empty,
 	}
 }
 @endgo

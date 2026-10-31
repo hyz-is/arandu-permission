@@ -40,7 +40,9 @@ func membersTable(data IndexData) components.DataTableProps {
 				Label: person.UserID,
 				URL: data.Prefix + "/users/" + person.UserID,
 				Variant: "hover",
-				ComponentProps: components.ComponentProps{Class: "font-mono text-xs"},
+				// The identifying cell leads to the person, and a script that
+				// follows data-row-link makes the whole row do the same.
+				ComponentProps: components.ComponentProps{Class: "font-mono text-xs", Attrs: components.Attrs{"data-row-link": ""}},
 			})},
 		}
 		if len(links) > 0 {
@@ -58,6 +60,22 @@ func membersTable(data IndexData) components.DataTableProps {
 		}
 		rows = append(rows, components.TableRow{Key: person.UserID, Cells: cells})
 	}
+	// The finish every list has: the panel's own sentences, a footer that counts
+	// what the page holds with the noun in the right form (and says when it is
+	// not the last page), and an empty result that names who was looked for.
+	lines := data.Labels.TableLines()
+	lines.Rows = data.Labels.Footer(len(rows), "person", data.Next != "")
+	empty := components.EmptyProps{
+		Title: data.Labels.T("members.empty_title"),
+		Message: data.Labels.T("members.empty_message"),
+	}
+	if data.Search != "" || data.Group != "" {
+		lines.NoResult = data.Labels.T("members.none_found")
+		empty = components.EmptyProps{
+			Title: data.Labels.T("members.none_found"),
+			Message: data.Labels.T("members.none_found_message"),
+		}
+	}
 	return components.DataTableProps{
 		ComponentProps: components.ComponentProps{Class: "mt-6"},
 		ID: "permission-members",
@@ -70,11 +88,10 @@ func membersTable(data IndexData) components.DataTableProps {
 			{Label: data.Labels.T("member.direct_title"), Key: "direct", Hideable: true},
 		},
 		Rows: rows,
+		HeaderMenu: true,
+		Lines: lines,
 		ColumnsLabel: data.Labels.T("control.columns"),
-		Empty: components.EmptyProps{
-			Title: data.Labels.T("members.empty_title"),
-			Message: data.Labels.T("members.empty_message"),
-		},
+		Empty: empty,
 	}
 }
 
@@ -98,12 +115,12 @@ func membersNextURL(data IndexData) string {
 
 @section('content')
 <section class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="flex items-start justify-between gap-4">
+	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{{ .Labels.T("members.title") }}</h1>
 			<p class="text-muted-foreground mt-1 max-w-prose text-sm">{{ .Labels.T("members.lead") }}</p>
 		</div>
-		<nav class="flex items-center gap-2">
+		<nav class="flex flex-wrap items-center gap-2">
 			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/groups">{{ .Labels.T("groups.title") }}</a>
 			<a class="btn" data-variant="outline" data-size="sm" href="{{ .Prefix }}/catalogue">{{ .Labels.T("catalogue.title") }}</a>
 		</nav>
