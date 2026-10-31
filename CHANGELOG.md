@@ -10,6 +10,17 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-31
+
+### Fixed
+
+- `Module.Roles` mounted twice on one request -- once for every route and again
+  behind a route group, as an application does -- read the tenant's version
+  token and resolved the subject twice. The second mount now reuses the answer
+  of the first for the same person and tenant. The answer is kept on the
+  request's context and dies with it: the next request reads the token as
+  before, so a revocation holds on the next request.
+
 ## [0.8.0] - 2026-10-25
 
 ### Changed
