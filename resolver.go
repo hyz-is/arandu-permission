@@ -117,6 +117,19 @@ func (r *Resolver) remember(key resolverKey, entry resolverEntry) {
 	r.entries[key] = entry
 }
 
+// resolvedKey is where Roles leaves, on the request's context, what it resolved
+// for the request.
+type resolvedKey struct{}
+
+// resolved is one resolution made during one request: by which resolver, for
+// whom, and what it answered.
+type resolved struct {
+	by      *Resolver
+	tenant  string
+	user    string
+	actions []security.Action
+}
+
 // Roles returns middleware that fills in what the acting subject may do.
 //
 // Mount it after whatever establishes the session and before anything that
@@ -130,6 +143,10 @@ func (r *Resolver) remember(key resolverKey, entry resolverEntry) {
 // subject as it was stored, without the actions -- so the two are not
 // interchangeable, and this is the one that has them.
 //
+// Mounted again on the same request, it reuses the answer the first mount gave
+// for that person and tenant, kept on the request's context and nowhere else,
+// so the tenant's token is read once per request.
+//
 // A request with no session passes through untouched: there is nobody to
 // resolve, and answering a visitor with a refusal here would refuse them the
 // public pages too.
@@ -139,6 +156,19 @@ func (m *Module) Roles() fhttp.Middleware {
 			subject, err := m.sessions.Load(r.Context(), r)
 			if err != nil || subject.ID == "" {
 				next.ServeHTTP(w, r)
+				return
+			}
+
+			// A second mount on one request -- an application mounts Roles
+			// for every route and again behind a route group -- finds the
+			// answer the first one gave, for the same person in the same
+			// tenant, instead of reading the tenant's token again. The answer
+			// lives on this request's context and dies with it, so the next
+			// request resolves from the token as it always did.
+			if answered, ok := r.Context().Value(resolvedKey{}).(resolved); ok &&
+				answered.by == m.roles && answered.tenant == subject.Tenant && answered.user == subject.ID {
+				subject.Actions = append([]security.Action(nil), answered.actions...)
+				next.ServeHTTP(w, r.WithContext(auth.WithSubject(r.Context(), subject)))
 				return
 			}
 
@@ -158,7 +188,8 @@ func (m *Module) Roles() fhttp.Middleware {
 			// moment this middleware ran, with both sides []string and nothing
 			// in the build to say so.
 			subject.Actions = actions
-			next.ServeHTTP(w, r.WithContext(auth.WithSubject(r.Context(), subject)))
+			ctx := context.WithValue(r.Context(), resolvedKey{}, resolved{by: m.roles, tenant: subject.Tenant, user: subject.ID, actions: append([]security.Action(nil), actions...)})
+			next.ServeHTTP(w, r.WithContext(auth.WithSubject(ctx, subject)))
 		})
 	}
 }
