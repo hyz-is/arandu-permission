@@ -3,6 +3,9 @@
 package groups
 
 import (
+	"net/url"
+
+	"github.com/arandu-io/hesape/pagination"
 	"github.com/arandu-io/kyse/components"
 
 	permission "github.com/hyz-is/arandu-permission"
@@ -16,6 +19,75 @@ import (
 // shapes kept in step by hand, and a field missing from one of them is a blank
 // space on a page that answered 200.
 type IndexData = permission.GroupsPageData
+
+func groupsTable(data IndexData) components.DataTableProps {
+	rows := make([]components.TableRow, 0, len(data.Groups))
+	for _, group := range data.Groups {
+		rows = append(rows, components.TableRow{Key: group.ID, Label: group.Name, Cells: []components.TableCell{
+			{HTML: components.Link(components.LinkProps{
+				Label:   group.Name,
+				URL:     data.Prefix + "/groups/" + group.ID,
+				Variant: "hover",
+				// The identifying cell leads to the group, and a script that
+				// follows data-row-link makes the whole row do the same.
+				ComponentProps: components.ComponentProps{Attrs: components.Attrs{"data-row-link": ""}},
+			})},
+			{HTML: components.Badge(components.BadgeProps{Label: group.Slug, Variant: "outline"})},
+		}})
+	}
+	// The finish every list has: the panel's own sentences, a footer that counts
+	// the groups with the noun in the right form, and an empty result that names
+	// who was looked for. The footer is drawn only where the size of the list is
+	// known, and it is when this page holds all of it: the first page, with none
+	// after it. A page of a longer list has no total to count, and says none.
+	lines := data.Labels.TableLines()
+	lines.Rows = data.Labels.Count(len(rows), "group") + "."
+	var pager *pagination.LengthAwarePage
+	if data.Cursor == "" && data.Next == "" {
+		pager = pagination.NewLengthAwarePage(len(rows), len(rows), max(len(rows), 1), 1, pagination.Options{Path: data.Prefix + "/groups"})
+	}
+	empty := components.EmptyProps{
+		Title:   data.Labels.T("groups.empty_title"),
+		Message: data.Labels.T("groups.empty_message"),
+	}
+	if data.Search != "" {
+		lines.NoResult = data.Labels.T("groups.none_found")
+		empty = components.EmptyProps{
+			Title:   data.Labels.T("groups.none_found"),
+			Message: data.Labels.T("groups.none_found_message"),
+		}
+	}
+	return components.DataTableProps{
+		ComponentProps: components.ComponentProps{Class: "mt-6"},
+		ID:             "permission-groups",
+		Label:          data.Labels.T("groups.title"),
+		URL:            data.Prefix + "/groups",
+		Caption:        data.Labels.T("groups.lead"),
+		Columns: []components.TableColumn{
+			{Label: data.Labels.T("field.name"), Key: "name"},
+			{Label: data.Labels.T("field.slug"), Key: "slug", Hideable: true},
+		},
+		Rows:          rows,
+		Paginator:     pager,
+		HeaderMenu:    true,
+		Lines:         lines,
+		ColumnsLabel:  data.Labels.T("control.columns"),
+		SelectedLabel: data.Labels.T("table.selected_label"),
+		Empty:         empty,
+	}
+}
+
+func groupsNextURL(data IndexData) string {
+	if data.Next == "" {
+		return ""
+	}
+	q := url.Values{}
+	q.Set("cursor", data.Next)
+	if data.Search != "" {
+		q.Set("q", data.Search)
+	}
+	return data.Prefix + "/groups?" + q.Encode()
+}
 @endgo
 
 @extends('layouts.app')
@@ -52,31 +124,11 @@ type IndexData = permission.GroupsPageData
 		{!! components.Button(components.ButtonProps{Label: .Labels.T("field.search"), Type: "submit", Variant: "outline"}) !!}
 	</form>
 
-	@if(len(.Groups) > 0)
-		<ul class="mt-6 grid gap-3">
-			@foreach(.Groups as group)
-				<li>
-					{!! components.Card(components.CardProps{
-						Title:       group.Name,
-						Href:        .Prefix + "/groups/" + group.ID,
-						Description: group.Slug,
-					}) !!}
-				</li>
-			@endforeach
-		</ul>
+	{!! components.DataTable(groupsTable(.)) !!}
 
-		@if(.Next != "")
-			<div class="mt-6 flex justify-end">
-				<a class="btn" data-variant="outline" data-size="sm"
-				   href="{{ .Prefix }}/groups?q={{ .Search }}&cursor={{ .Next }}">{{ .Labels.T("control.next_page") }}</a>
-			</div>
-		@endif
-	@else
-		<div class="mt-6">
-			{!! components.Empty(components.EmptyProps{
-				Title:   .Labels.T("groups.empty_title"),
-				Message: .Labels.T("groups.empty_message"),
-			}) !!}
+	@if(groupsNextURL(.) != "")
+		<div class="mt-6 flex justify-end">
+			<a class="btn" data-variant="outline" data-size="sm" href="{{ groupsNextURL(.) }}">{{ .Labels.T("control.next_page") }}</a>
 		</div>
 	@endif
 

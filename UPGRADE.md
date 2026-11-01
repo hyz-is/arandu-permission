@@ -1,5 +1,16 @@
 # Upgrade Guide
 
+## v0.11.0
+
+`GroupsPageData` gained a `Cursor` field, which the handler fills and the
+published `groups/index.kyse.go` reads to give the table a counted page when the
+page holds the whole list. A project that republished that view keeps the card
+list it has until it copies the `groupsTable` and `groupsNextURL` of the release
+into its own copy; nothing breaks if it does not. The two new lines
+(`permission.groups.none_found*`) are shipped, so nothing is copied into the
+project. `apidiff` against `v0.10.0` reports the `Cursor` field added and
+nothing else changed. There is no migration.
+
 ## v0.10.0
 
 `Labels.Footer` is gone (it was added in `v0.9.0` and nothing could draw what it

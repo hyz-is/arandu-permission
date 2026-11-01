@@ -10,6 +10,24 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-01
+
+### Changed
+
+- The groups list is a Kyse data table, as the people list and the grid are: the
+  panel's own sentences, a footer that counts the groups with the noun in the
+  right form where the page holds the whole list, an empty result that names the
+  search, the header menu and the columns menu, and a row that leads to its
+  group. The search form and the cursor link stay as they were, so the
+  addresses are the same.
+
+### Added
+
+- `GroupsPageData.Cursor`: the cursor the page was read from, empty on the first
+  page, which is how the view knows the page holds the whole list.
+- `permission.groups.none_found` and `permission.groups.none_found_message`, in
+  English and Portuguese.
+
 ## [0.10.0] - 2026-10-31
 
 ### Fixed

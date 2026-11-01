@@ -343,6 +343,10 @@ type GroupsPageData struct {
 	// on the last one.
 	Groups []GroupRef
 	Next   string
+	// Cursor is the cursor this page was read from, and empty on the first. A
+	// first page with no Next holds the whole list, which is when the table can
+	// say how many groups there are.
+	Cursor string
 	// Rejected holds the field errors of a create that was refused, so the form
 	// comes back with the reason on it rather than blank.
 	Rejected validation.Errors
@@ -500,6 +504,7 @@ func (m *Module) index(ctx *fhttp.Context) error {
 		Search: search,
 		Groups: page.Items,
 		Next:   page.Next,
+		Cursor: ctx.Query("cursor"),
 	})
 }
 

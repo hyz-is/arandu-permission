@@ -33,7 +33,9 @@
         "new": "Novo grupo",
         "new_lead": "O identificador é o nome estável e não muda depois.",
         "empty_title": "Nenhum grupo aqui",
-        "empty_message": "Nada corresponde à busca, ou nada foi criado ainda."
+        "empty_message": "Nada corresponde à busca, ou nada foi criado ainda.",
+        "none_found": "Nenhum grupo encontrado.",
+        "none_found_message": "Confira a busca."
     },
     "group": {
         "permissions_lead": "Todas as permissões que esta aplicação declara. O que não está marcado não é carregado.",

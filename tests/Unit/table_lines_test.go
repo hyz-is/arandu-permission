@@ -56,7 +56,7 @@ func TestACountAgreesWithItsNoun(t *testing.T) {
 	}
 }
 
-// TestTheListsHaveTheFinish reads the two published lists for what the finish
+// TestTheListsHaveTheFinish reads the three published lists for what the finish
 // is made of: the panel's sentences, a footer that counts, an empty result that
 // names who was looked for, the header menu, and a row that leads to its record.
 func TestTheListsHaveTheFinish(t *testing.T) {
@@ -91,6 +91,10 @@ func TestTheListsHaveTheFinish(t *testing.T) {
 		"users/index.kyse.go": {
 			"data.Labels.TableLines()", `data.Labels.Count(len(rows), "person") + "."`, "data.Cursor == \"\" && data.Next == \"\"", "Paginator: pager",
 			`data.Labels.T("members.none_found")`, "HeaderMenu: true", `"table.selected_label"`, `"data-row-link"`,
+		},
+		"groups/index.kyse.go": {
+			"data.Labels.TableLines()", `data.Labels.Count(len(rows), "group") + "."`, "data.Cursor == \"\" && data.Next == \"\"", "Paginator:     pager",
+			`data.Labels.T("groups.none_found")`, "HeaderMenu:    true", `"table.selected_label"`, `"data-row-link"`,
 		},
 		"matrix/index.kyse.go": {
 			"data.Labels.TableLines()", `data.Labels.Count(len(rows), "group") + "."`, "data.Cursor == \"\" && data.Matrix.Next == \"\"", "Paginator:      pager",

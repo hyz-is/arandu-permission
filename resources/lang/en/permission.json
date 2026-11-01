@@ -33,7 +33,9 @@
         "new": "New group",
         "new_lead": "The slug is the stable name and does not change afterwards.",
         "empty_title": "No group here",
-        "empty_message": "Nothing matches, or nothing has been created yet."
+        "empty_message": "Nothing matches, or nothing has been created yet.",
+        "none_found": "No group found.",
+        "none_found_message": "Check the search."
     },
     "group": {
         "permissions_lead": "Every permission this application declares. What is not ticked is not carried.",
