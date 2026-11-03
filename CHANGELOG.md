@@ -10,6 +10,22 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-03
+
+### Fixed
+
+- Deleting a group no longer asks with the browser's own confirm box. The group
+  screen's delete button opened `hx-confirm`, which htmx turns into
+  `window.confirm`. The published `groups/show.kyse.go` now draws a Kyse
+  `Dialog`, centred over the page, opened by a `DialogTrigger`; the confirm
+  button posts the `DELETE` as `_method`, the same address the htmx request
+  went to.
+
+### Added
+
+- `permission.control.delete` and `permission.control.cancel`, in English and
+  Portuguese: the words on the two buttons of that dialog.
+
 ## [0.11.0] - 2026-11-01
 
 ### Changed

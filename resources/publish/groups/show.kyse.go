@@ -172,19 +172,29 @@ type ShowData = permission.GroupPageData
 			<p class="text-muted-foreground mt-1 text-sm">
 				{{ .Labels.T("group.delete_lead") }}
 			</p>
-			{{-- The verb is on the form and not on the button: a component takes
-			     the HTMX attributes it supports as fields of its own, and the
-			     delete verb is not one of them. --}}
-			<form class="mt-4"
-			      hx-delete="{{ .Prefix }}/groups/{{ .Group.ID }}"
-			      hx-confirm="{{ .Labels.T("group.delete_confirm") }}">
-				@csrf
-				{!! components.Button(components.ButtonProps{
+			{{-- The question is a Dialog drawn here and opened by the button, never
+			     an htmx question, which the browser draws as its own confirm box.
+			     The Dialog posts the delete verb as _method, which the router
+			     reads, so the form needs no hx- attribute at all. --}}
+			<div class="mt-4">
+				{!! components.DialogTrigger(components.DialogTriggerProps{
+					Dialog:  "delete-group",
 					Label:   .Labels.T("control.delete_group"),
-					Type:    "submit",
 					Variant: "destructive",
 				}) !!}
-			</form>
+			</div>
+			{!! components.Dialog(components.DialogProps{
+				ID:             "delete-group",
+				Title:          .Labels.T("control.delete_group"),
+				Message:        .Labels.T("group.delete_confirm"),
+				ConfirmLabel:   .Labels.T("control.delete"),
+				ConfirmVariant: "destructive",
+				CancelLabel:    .Labels.T("control.cancel"),
+				Alert:          true,
+				Action:         .Prefix + "/groups/" + .Group.ID,
+				Method:         "DELETE",
+				Token:          .Token,
+			}) !!}
 		</section>
 	@endif
 	</section>

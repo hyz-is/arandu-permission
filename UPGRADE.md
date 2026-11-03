@@ -1,5 +1,16 @@
 # Upgrade Guide
 
+## v0.11.1
+
+The published `groups/show.kyse.go` asks before deleting a group with a Kyse
+`Dialog` and no longer carries `hx-confirm`. A project that republished that
+view keeps the `hx-delete` form with `hx-confirm` it has; with Hesape v0.103.0
+or later the question is drawn as a dialog anyway, and earlier it is the
+browser's own box. To take the dialog, copy the `delete-group` trigger and
+dialog of the release into the project's copy. The two new lines
+(`permission.control.delete`, `permission.control.cancel`) are shipped. No
+signature changed and there is no migration.
+
 ## v0.11.0
 
 `GroupsPageData` gained a `Cursor` field, which the handler fills and the

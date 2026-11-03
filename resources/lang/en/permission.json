@@ -21,6 +21,8 @@
         "save": "Save",
         "create_group": "Create group",
         "delete_group": "Delete this group",
+        "delete": "Delete",
+        "cancel": "Cancel",
         "review": "Review changes",
         "apply": "Apply this change",
         "next_page": "Next page",
