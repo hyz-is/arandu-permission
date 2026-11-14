@@ -10,6 +10,18 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-14
+
+### Added
+
+- `Config.AccountName`, an optional read of the name of the person signed in.
+  `view.New` leaves `UserName` empty because a subject carries an identifier and
+  not a display name, so a layout that draws the account at the foot of its menu
+  drew a placeholder on every screen of this module (a question mark where the
+  administrator's name should be). With the read configured, each screen's page
+  carries the name it answers for the subject of the session, and only for a
+  subject that is signed in. With it nil nothing changes.
+
 ## [0.11.1] - 2026-11-03
 
 ### Fixed

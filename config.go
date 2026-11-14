@@ -1,6 +1,7 @@
 package permission
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -100,6 +101,19 @@ type Config struct {
 	// Each one runs on the path of the request that caused the change. See
 	// Listener for what that means.
 	Listeners []Listener
+
+	// AccountName is the name of the person signed in, which the application's
+	// layout draws wherever it names who is using the screen, such as the foot
+	// of its menu.
+	//
+	// It is optional. The subject carries an identifier and not a display name,
+	// so a screen of this module cannot know one: with it nil the name stays
+	// empty and a layout that draws an initial draws a placeholder for it. An
+	// application that keeps names hands the read in here, and every screen of
+	// the module carries it as its own screens do. It is asked only for a
+	// subject that is signed in, never for a visitor, and what it answers is
+	// drawn escaped, as every field of the page is.
+	AccountName func(ctx context.Context, subject security.Subject) string
 
 	// CacheSize is how many resolved subjects one process remembers. Zero means
 	// DefaultCacheSize. It bounds memory and nothing else: the remembered

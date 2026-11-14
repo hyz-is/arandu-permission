@@ -1,5 +1,16 @@
 # Upgrade Guide
 
+## v0.12.0
+
+`Config` gained `AccountName`, `func(ctx context.Context, subject
+security.Subject) string`. It is optional and nothing changes without it. An
+application whose layout draws the signed-in person's name passes the read it
+already makes for its own screens, for example
+`AccountName: func(ctx context.Context, s security.Subject) string { return names.Of(ctx, s) }`;
+every screen of the module then carries that name in `Page.UserName`. `apidiff`
+against `v0.11.1` reports the field added and nothing else changed. There is no
+migration.
+
 ## v0.11.1
 
 The published `groups/show.kyse.go` asks before deleting a group with a Kyse

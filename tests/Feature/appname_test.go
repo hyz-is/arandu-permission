@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,20 +51,26 @@ func (shell) Renderer() fhttp.Renderer { return layout{} }
 // names from init(), the way the compiled views of an application do.
 func booted(t *testing.T, name string) application {
 	t.Helper()
+	return bootedWith(t, name, settings())
+}
+
+// bootedWith is booted with the configuration the installer passes.
+func bootedWith(t *testing.T, name string, cfg permission.Config) application {
+	t.Helper()
 
 	handle, svc, admin := administered(t, administrator)
 	sessions := security.NewSessionStore([]byte(appKey), time.Hour, false, security.NewMemoryBackend())
-	module, err := permission.New(settings(), handle, sessions, nil)
+	module, err := permission.New(cfg, handle, sessions, nil)
 	if err != nil {
 		t.Fatalf("building the module: %v", err)
 	}
 
-	cfg := bootstrap.Configuration{
+	boot := bootstrap.Configuration{
 		App:           config.App{Name: name, Env: config.EnvProd, Key: []byte(appKey)},
 		Observability: bootstrap.Observability{LogLevel: slog.LevelError},
 	}
 	csrf := security.NewCSRF([]byte(appKey), time.Hour).Secure(false)
-	app := foundation.New(cfg).
+	app := foundation.New(boot).
 		Register(shell{}, module).
 		Use(middleware.CSRFProtect(csrf, sessions.IDFromRequest))
 	if err := app.Boot(context.Background()); err != nil {
@@ -122,5 +129,56 @@ func TestAnApplicationWithNoNameGetsNoBrandMadeUp(t *testing.T) {
 	}
 	if got, drawn := brand(rec.Body.String()); !drawn || got != "" {
 		t.Errorf("with no APP_NAME the brand reads %q (drawn: %t), want an empty brand", got, drawn)
+	}
+}
+
+// TestEveryScreenCarriesTheNameTheApplicationReadsForTheSubject holds the name
+// the layout draws for the person signed in: view.New leaves it empty, and a
+// layout that draws an initial from it drew a question mark on every screen of
+// this module. The application's read is asked for the subject of the session,
+// on each screen, and for nobody else.
+func TestEveryScreenCarriesTheNameTheApplicationReadsForTheSubject(t *testing.T) {
+	var asked []string
+	cfg := settings()
+	cfg.AccountName = func(_ context.Context, subject security.Subject) string {
+		asked = append(asked, subject.ID)
+		return "Maria <Admin>"
+	}
+	app := bootedWith(t, "Acme Console", cfg)
+	session := app.signIn(t, administrator)
+	for _, target := range []string{
+		permission.DefaultPrefix + "/groups",
+		permission.DefaultPrefix + "/catalogue",
+		permission.DefaultPrefix + "/matrix",
+		permission.DefaultPrefix + "/users",
+		permission.DefaultPrefix + "/users/" + administrator,
+	} {
+		rec := app.visit(t, http.MethodGet, target, nil, session, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s answered %d: %s", target, rec.Code, rec.Body)
+		}
+		if !strings.Contains(rec.Body.String(), "<span data-account>Maria &lt;Admin&gt;</span>") {
+			t.Errorf("%s does not draw the name the application read:\n%s", target, rec.Body)
+		}
+	}
+	for _, id := range asked {
+		if id != administrator {
+			t.Errorf("the name was read for %q, and the session is %q", id, administrator)
+		}
+	}
+	if len(asked) == 0 {
+		t.Error("the application's read was never asked")
+	}
+}
+
+// With no read configured the name stays empty and the screens still answer.
+func TestAScreenWithNoNameReadDrawsNoName(t *testing.T) {
+	app := booted(t, "Acme Console")
+	rec := app.visit(t, http.MethodGet, permission.DefaultPrefix+"/groups", nil, app.signIn(t, administrator), nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("the listing answered %d: %s", rec.Code, rec.Body)
+	}
+	if !strings.Contains(rec.Body.String(), "<span data-account></span>") {
+		t.Errorf("a screen with no name read draws something for the name:\n%s", rec.Body)
 	}
 }

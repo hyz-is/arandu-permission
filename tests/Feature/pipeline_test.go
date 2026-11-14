@@ -46,6 +46,7 @@ func (layout) Render(_ context.Context, w http.ResponseWriter, status int, name 
 	var b strings.Builder
 	fmt.Fprintf(&b, "<a data-brand href=\"%s\">%s</a>\n", html.EscapeString(page.HomeLink()), html.EscapeString(page.BrandName()))
 	if page.SignedIn() {
+		fmt.Fprintf(&b, "<span data-account>%s</span>\n", html.EscapeString(page.SignedInName()))
 		fmt.Fprintf(&b, "<a data-logout href=\"%s\">Sign out</a>\n", html.EscapeString(page.LogoutLink()))
 	} else {
 		fmt.Fprintf(&b, "<a data-login href=\"%s\">Sign in</a>\n", html.EscapeString(page.LoginLink()))

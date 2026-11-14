@@ -892,11 +892,18 @@ func (m *Module) locale(r *stdhttp.Request) string {
 // navigation targets come from the route table, by the names view.New
 // documents, so a route the application never registered draws no link.
 //
-// Authenticated is the one field set after New, from the subject this module
-// reads, so the screen and the decisions behind it agree on who is signed in.
+// Authenticated is set after New, from the subject this module reads, so the
+// screen and the decisions behind it agree on who is signed in. UserName is set
+// with it, from the application's Config.AccountName when it gave one: New
+// leaves it empty, because the name is a read the application makes, and the
+// layout would otherwise draw a placeholder for the person using the screen.
 func (m *Module) page(ctx *fhttp.Context, title string) hview.Page {
 	page := hview.New(ctx, title)
-	page.Authenticated = m.subject(ctx.Request).ID != ""
+	subject := m.subject(ctx.Request)
+	page.Authenticated = subject.ID != ""
+	if page.Authenticated && m.cfg.AccountName != nil {
+		page.UserName = m.cfg.AccountName(ctx.Ctx(), subject)
+	}
 	return page
 }
 
