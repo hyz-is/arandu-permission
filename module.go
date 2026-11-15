@@ -94,7 +94,9 @@ const (
 // that pair is the whole public contract between a package and the framework.
 //
 // It also implements foundation.Migratable, because it owns tables, and
-// foundation.Publishable, because it hands view sources to the project.
+// foundation.Publishable, because it hands view sources to the project, and
+// foundation.Bootable, because it refuses to start while those views are not
+// linked.
 type Module struct {
 	cfg      Config
 	svc      *PermissionService

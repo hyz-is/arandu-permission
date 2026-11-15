@@ -24,7 +24,7 @@ go get github.com/hyz-is/arandu-permission
 
 An Arandu application registers a module explicitly. There is no service
 provider, no container and no discovery, so these are the lines to paste into
-`bootstrap/app.go` and there are no others.
+`bootstrap/app.go`, and the views add imports below.
 
 The import, with the other module imports:
 
@@ -34,16 +34,19 @@ import (
 )
 ```
 
-The construction, in `Build`, after the session store exists and before
-`k.Register`:
+The construction, in `App`, once `NewAppServiceProvider` has returned. `New`
+refuses a wiring that cannot work and `Configure` has no way to return that
+error, so the module is built where the error can leave; the database and the
+session store are the ones the framework built from the configuration:
 
 ```go
 	permissionModule, err := permission.New(permission.Config{
 		Tenant:  cfg.Auth.Tenant,
 		Actions: append(myapp.Actions(), permission.Actions()...),
-	}, db, sessions, nil)
+	}, drivers.DB, drivers.Sessions, nil)
 	if err != nil {
-		return App{}, err
+		_ = drivers.Close()
+		return nil, err
 	}
 ```
 
@@ -51,10 +54,13 @@ The last argument is not read; pass `nil`. The forms on these screens carry the
 token `middleware.CSRFProtect` issued for the request, not one this package
 issues.
 
-And the registration, inside the `k.Register(...)` call already there:
+And the registration, in the `WithProviders(...)` chain the builder is made of:
 
 ```go
-		permissionModule,
+	return Configure(cfg, drivers, app).
+		WithProviders(permissionModule).
+		WithVersion(version, commit).
+		Create()
 ```
 
 Then, once, before the application serves:
@@ -99,10 +105,13 @@ explain. Compile what was written:
 aru view:build
 ```
 
-and import the directory it wrote into, with the other imports:
+and import the four directories it wrote into, with the other imports:
 
 ```go
-	_ "your/module/path/storage/framework/views/modules/permission"
+	_ "your/module/path/storage/framework/views/modules/permission/catalogue"
+	_ "your/module/path/storage/framework/views/modules/permission/groups"
+	_ "your/module/path/storage/framework/views/modules/permission/matrix"
+	_ "your/module/path/storage/framework/views/modules/permission/users"
 ```
 
 Without that import the views are not in the binary, and the module refuses to

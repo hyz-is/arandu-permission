@@ -1,6 +1,6 @@
 ---
 name: permission-package
-description: Install, wire and use the Arandu Permission package (Go, Arandu) in an application. Use when the request is to "install Arandu Permission", "add permission to the app", "go get github.com/hyz-is/arandu-permission", "wire it into bootstrap/app.go", "register the module", "use the permission routes", "everything under /permission returns 403", "403 forbidden from permission", "the table does not exist", "no such table", "change where it is mounted", "let admins read it", or when a project's go.mod already requires github.com/hyz-is/arandu-permission. Covers the three lines of wiring and where each one goes, the Config fields and which one is required, the routes and their names, why the policy refuses everything until somebody opens it, and the migration step that is not optional.
+description: Install, wire and use the Arandu Permission package (Go, Arandu) in an application. Use when the request is to "install Arandu Permission", "add permission to the app", "go get github.com/hyz-is/arandu-permission", "wire it into bootstrap/app.go", "register the module", "use the permission routes", "everything under /permission returns 403", "403 forbidden from permission", "the table does not exist", "no such table", "change where it is mounted", "let admins read it", or when a project's go.mod already requires github.com/hyz-is/arandu-permission. Covers the wiring and where each part goes, publishing and linking the views, the Config fields and which one is required, the routes and their names, why the policy refuses everything until somebody opens it, and the migration step that is not optional.
 license: MIT
 metadata:
   audience: app
@@ -19,10 +19,10 @@ happen.
 go get github.com/hyz-is/arandu-permission
 ```
 
-## The three lines of wiring, and where each one goes
+## The wiring, and where each part goes
 
-All three are in `bootstrap/app.go`. Nothing else in the application changes,
-and `aru make:module` does not edit this file for you.
+All of it is in `bootstrap/app.go`. `aru make:module` does not edit this file for
+you, and the views the package carries have to be published and linked, below.
 
 The import, with the other module imports:
 
@@ -32,16 +32,19 @@ import (
 )
 ```
 
-The construction, in `Build`, after the session store exists and before
-`k.Register`:
+The construction, in `App`, once `NewAppServiceProvider` has returned. `New`
+refuses a wiring that cannot work and `Configure` has no way to return that
+error, so the module is built where the error can leave; the database and the
+session store are the ones the framework built from the configuration:
 
 ```go
 	permissionModule, err := permission.New(permission.Config{
 		Tenant:  cfg.Auth.Tenant,
 		Actions: append(myapp.Actions(), permission.Actions()...),
-	}, db, sessions, nil)
+	}, drivers.DB, drivers.Sessions, nil)
 	if err != nil {
-		return App{}, err
+		_ = drivers.Close()
+		return nil, err
 	}
 ```
 
@@ -49,16 +52,46 @@ The last argument is not read; pass `nil`. The forms on these screens carry the
 token `middleware.CSRFProtect` issued for the request, not one this package
 issues.
 
-And the registration, inside the `k.Register(...)` call already there:
+And the registration, in the `WithProviders(...)` chain the builder is made of:
 
 ```go
-		permissionModule,
+	return Configure(cfg, drivers, app).
+		WithProviders(permissionModule).
+		WithVersion(version, commit).
+		Create()
 ```
 
 `New` returns an error rather than starting half-wired. It refuses a
 configuration that cannot work, a nil database handle and a nil session store,
 so a wiring mistake costs one restart instead of arriving as a nil dereference
 on the first request that needed it.
+
+## Then publish and link the views
+
+The package carries the markup of its own pages and hands it over, and it
+refuses to boot until the project has linked it. Publish them, then compile them:
+
+```bash
+aru vendor:publish --tag=view
+aru vendor:publish --tag=view --apply
+aru view:build
+```
+
+The first line only previews; nothing is written without `--apply`. The files
+land under `resources/views/modules/permission/` and are the project's from
+then on. `aru view:build` compiles them, and the compiled packages are imported
+with the other blank imports of `bootstrap/app.go`:
+
+```go
+	_ "your/module/path/storage/framework/views/modules/permission/catalogue"
+	_ "your/module/path/storage/framework/views/modules/permission/groups"
+	_ "your/module/path/storage/framework/views/modules/permission/matrix"
+	_ "your/module/path/storage/framework/views/modules/permission/users"
+```
+
+**Symptom to recognise:** the application stops at boot with an error naming the
+view, the command and the import. One of the steps is missing, and the import
+is the usual one.
 
 ## Then run the migrations
 
