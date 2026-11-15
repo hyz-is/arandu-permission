@@ -88,9 +88,9 @@ type ShowData = permission.MemberPageData
 		</p>
 
 		<form id="direct-form" class="mt-6"
-		      hx-post="{{ .Prefix }}/users/{{ .Effective.UserID }}/summary"
-		      hx-target="#direct-summary"
-		      hx-swap="innerHTML">
+		      ypy-post="{{ .Prefix }}/users/{{ .Effective.UserID }}/summary"
+		      ypy-target="#direct-summary"
+		      ypy-swap="innerHTML">
 			@csrf
 			<input type="hidden" name="kind" value="actions">
 

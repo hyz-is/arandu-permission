@@ -47,7 +47,7 @@ type ShowData = permission.GroupPageData
 
 	<section class="mt-10">
 		<h2 class="text-lg font-semibold tracking-tight">{{ .Labels.T("field.name") }}</h2>
-		<form class="mt-4 grid max-w-lg gap-4" hx-put="{{ .Prefix }}/groups/{{ .Group.ID }}">
+		<form class="mt-4 grid max-w-lg gap-4" ypy-put="{{ .Prefix }}/groups/{{ .Group.ID }}">
 			@csrf
 			<div>
 				{!! components.Label(components.LabelProps{For: "name", Text: .Labels.T("field.name")}) !!}
@@ -82,9 +82,9 @@ type ShowData = permission.GroupPageData
 		</p>
 
 		<form id="actions-form" class="mt-6"
-		      hx-post="{{ .Prefix }}/groups/{{ .Group.ID }}/summary"
-		      hx-target="#actions-summary"
-		      hx-swap="innerHTML">
+		      ypy-post="{{ .Prefix }}/groups/{{ .Group.ID }}/summary"
+		      ypy-target="#actions-summary"
+		      ypy-swap="innerHTML">
 			@csrf
 			<input type="hidden" name="kind" value="actions">
 
@@ -130,9 +130,9 @@ type ShowData = permission.GroupPageData
 		</p>
 
 		<form id="members-form" class="mt-4 grid max-w-lg gap-4"
-		      hx-post="{{ .Prefix }}/groups/{{ .Group.ID }}/summary"
-		      hx-target="#members-summary"
-		      hx-swap="innerHTML">
+		      ypy-post="{{ .Prefix }}/groups/{{ .Group.ID }}/summary"
+		      ypy-target="#members-summary"
+		      ypy-swap="innerHTML">
 			@csrf
 			<input type="hidden" name="kind" value="members">
 
@@ -173,9 +173,9 @@ type ShowData = permission.GroupPageData
 				{{ .Labels.T("group.delete_lead") }}
 			</p>
 			{{-- The question is a Dialog drawn here and opened by the button, never
-			     an htmx question, which the browser draws as its own confirm box.
+			     a YPY question, which the browser draws as its own confirm box.
 			     The Dialog posts the delete verb as _method, which the router
-			     reads, so the form needs no hx- attribute at all. --}}
+			     reads, so the form needs no ypy- attribute at all. --}}
 			<div class="mt-4">
 				{!! components.DialogTrigger(components.DialogTriggerProps{
 					Dialog:  "delete-group",

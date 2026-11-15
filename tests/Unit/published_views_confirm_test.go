@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// A published view asks before it deletes with a Kyse Dialog. hx-confirm is
-// refused in them: htmx turns it into window.confirm, the browser's own box,
+// A published view asks before it deletes with a Kyse Dialog. ypy-confirm is
+// refused in them: YPY turns it into window.confirm, the browser's own box,
 // which no stylesheet reaches and which a person who sees it takes for a defect
 // of the product. The group screen's delete button used to carry one.
 func TestNoPublishedViewAsksWithTheBrowsersConfirmBox(t *testing.T) {
@@ -24,7 +24,7 @@ func TestNoPublishedViewAsksWithTheBrowsersConfirmBox(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		for _, refused := range []string{"hx-confirm", "HxConfirm", "window.confirm"} {
+		for _, refused := range []string{"ypy-confirm", "YpyConfirm", "window.confirm"} {
 			if strings.Contains(string(body), refused) {
 				t.Errorf("%s writes %s: ask with a Dialog, which is drawn over the page", strings.TrimPrefix(file, root+string(filepath.Separator)), refused)
 			}

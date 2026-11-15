@@ -1,5 +1,28 @@
 # Upgrade Guide
 
+## Unreleased
+
+### The published views speak YPY
+
+The group, user and matrix summary views this package publishes
+(`groups/show`, `users/show` and `matrix/summary`) now write their attributes the
+way YPY reads them: `ypy-put`, `ypy-post`, `ypy-target` and `ypy-swap`, where
+they carried the prefix of the old library. `Page`, `Config`, the routes, the
+actions and the migrations do not change.
+
+A project that published the views republishes them, because a file it
+published before keeps the attributes of the old library and a page running
+`ypy.min.js` does not read them:
+
+```sh
+aru vendor:publish --tag=view
+aru vendor:publish --tag=view --apply
+aru view:build
+```
+
+A conflict the first command reports is a file the project edited: bring the
+new attribute names across by hand, or publish it with `--force`.
+
 ## v0.12.0
 
 `Config` gained `AccountName`, `func(ctx context.Context, subject
@@ -14,8 +37,8 @@ migration.
 ## v0.11.1
 
 The published `groups/show.kyse.go` asks before deleting a group with a Kyse
-`Dialog` and no longer carries `hx-confirm`. A project that republished that
-view keeps the `hx-delete` form with `hx-confirm` it has; with Hesape v0.103.0
+`Dialog` and no longer carries the confirm attribute. A project that republished that
+view keeps the delete form with the confirm attribute it has; with Hesape v0.103.0
 or later the question is drawn as a dialog anyway, and earlier it is the
 browser's own box. To take the dialog, copy the `delete-group` trigger and
 dialog of the release into the project's copy. The two new lines
@@ -1194,7 +1217,7 @@ No package API, route or migration changes. Existing applications keep their pub
     aru vendor:publish --tag=view --apply
     aru view:build
 
-Application-specific action names remain application translations; pass them through Config.Translator. The module now ships the control.columns label in English and Brazilian Portuguese. The release selects Kyse v0.29.4, whose DataTable keeps search, facets, sort and caller-owned URL parameters together in the native/HTMX query path.
+Application-specific action names remain application translations; pass them through Config.Translator. The module now ships the control.columns label in English and Brazilian Portuguese. The release selects Kyse v0.29.4, whose DataTable keeps search, facets, sort and caller-owned URL parameters together in the native query path.
 
 ## v0.4.1
 
