@@ -116,6 +116,8 @@
         "filter": "Buscar em {label}...",
         "no_result": "Nada encontrado.",
         "rows": "{total} linha(s).",
+        "rows_one": "{total} linha.",
+        "rows_many": "{total} linhas.",
         "selected_count": "{n} linha(s) selecionada(s).",
         "rows_per_page": "Linhas por página",
         "page_of": "Página {n} de {total}",

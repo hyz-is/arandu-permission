@@ -10,6 +10,14 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+### Changed
+
+- `Labels.TableLines` fills `RowsOne` and `RowsMany`, the footer in the singular
+  and the plural, from the new catalogue lines `table.rows_one` and
+  `table.rows_many` in `en` and `pt-BR`. The published list views keep the
+  counted sentence ("3 people.") as the footer of both forms. Requires Kyse
+  v0.53.0 or later.
+
 ## [0.12.0] - 2026-11-14
 
 ### Added

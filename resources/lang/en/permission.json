@@ -116,6 +116,8 @@
         "filter": "Filter {label}...",
         "no_result": "Nothing found.",
         "rows": "{total} row(s).",
+        "rows_one": "{total} row.",
+        "rows_many": "{total} rows.",
         "selected_count": "{n} row(s) selected.",
         "rows_per_page": "Rows per page",
         "page_of": "Page {n} of {total}",

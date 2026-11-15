@@ -66,6 +66,7 @@ func matrixTable(data IndexData) components.DataTableProps {
 	// after it. A page of a longer list has no total to count, and says none.
 	lines := data.Labels.TableLines()
 	lines.Rows = data.Labels.Count(len(rows), "group") + "."
+	lines.RowsOne, lines.RowsMany = lines.Rows, lines.Rows
 	var pager *pagination.LengthAwarePage
 	if data.Cursor == "" && data.Matrix.Next == "" {
 		pager = pagination.NewLengthAwarePage(len(rows), len(rows), max(len(rows), 1), 1, pagination.Options{Path: data.Prefix + "/matrix"})

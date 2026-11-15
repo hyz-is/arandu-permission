@@ -26,6 +26,8 @@ func (l Labels) TableLines() components.DataTableLines {
 		Filter:         say("filter"),
 		NoResult:       say("no_result"),
 		Rows:           say("rows"),
+		RowsOne:        say("rows_one"),
+		RowsMany:       say("rows_many"),
 		SelectedCount:  say("selected_count"),
 		RowsPerPage:    say("rows_per_page"),
 		PageOf:         say("page_of"),

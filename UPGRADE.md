@@ -23,6 +23,30 @@ aru view:build
 A conflict the first command reports is a file the project edited: bring the
 new attribute names across by hand, or publish it with `--force`.
 
+### The table sentences name the footer in the singular and the plural
+
+`Labels.TableLines` fills the two footer fields Kyse's data table has since
+v0.53.0, `RowsOne` and `RowsMany`, from two new lines of the catalogue:
+`permission.table.rows_one` ("{total} row.") and `permission.table.rows_many`
+("{total} rows."). Both ship in `en` and `pt-BR`. An application that overrides
+the table lines in its own catalogue adds the two under the same keys; a locale
+that leaves them out says the English, as Kyse does for any empty line.
+
+The three published list views set the three footer fields to the same counted
+sentence ("3 people.") after reading `TableLines`, so a footer that counts a noun
+is not replaced by the generic one. A project that published the views
+republishes them, or adds `lines.RowsOne, lines.RowsMany = lines.Rows, lines.Rows`
+below the line that sets `lines.Rows`:
+
+```sh
+aru vendor:publish --tag=view
+aru vendor:publish --tag=view --apply
+aru view:build
+```
+
+This release builds against Kyse v0.53.0 or later: `RowsOne` and `RowsMany` do
+not exist before it.
+
 ## v0.12.0
 
 `Config` gained `AccountName`, `func(ctx context.Context, subject
