@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## v0.13.3
+
+Nothing to change in the code that wires the module. `permission:grant` with no
+`--as` now attaches an action that is in the catalogue and that nobody in the
+tenant holds, which is how an action an application declared after the first
+group is started:
+
+```sh
+aru permission:grant administrators rating.configure
+```
+
+Once anybody holds the action the command asks for `--as` again. The commands
+and their signatures are the same; `--as` is still required by every other
+write.
+
 ## v0.13.2
 
 Nothing to change in the code that wires the module. `SummaryPageData` gained

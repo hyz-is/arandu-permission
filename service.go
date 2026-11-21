@@ -403,6 +403,100 @@ func (s *PermissionService) Bootstrap(ctx context.Context, tenant string, in Boo
 	return record, nil
 }
 
+// BootstrapActions attaches actions nobody holds to a group, with nobody to act
+// as.
+//
+// It is the second door in this package that opens without a subject behind it,
+// and it exists for the same moment Bootstrap does. An application gains an
+// action after the first group was made: nobody holds it, so nobody can grant
+// it -- nobody hands out what they do not hold -- and the rule that protects the
+// installation would then keep it from ever being used.
+//
+// The door is shut by the state, as the first one is. Every action asked for
+// must be in the catalogue, and none may be held by anybody in the tenant, by a
+// group or directly: one row anywhere is enough to refuse with ErrActionHeld,
+// and the action then goes through the ordinary rules with somebody acting. The
+// request is refused whole, so a selector that happens to cover an action
+// somebody holds writes nothing. An action the group already carries is not a
+// change.
+//
+// The subject it acts as is constructed, carries this package's own actions
+// and the ones being attached, and so is what the rule that nobody grants what
+// they do not hold is asked of -- it is not suspended. Everything is written by
+// SetActions, so the same policies answer, the version token moves and the
+// listeners hear it, with "bootstrap" as the actor.
+func (s *PermissionService) BootstrapActions(ctx context.Context, tenant, groupSlug string, wanted []security.Action) (Change, error) {
+	if !security.ValidTenant(tenant) {
+		return Change{}, fmt.Errorf("permission: %q cannot be a tenant: lowercase letters, digits, - and _, up to 64 characters", tenant)
+	}
+	groupSlug = strings.TrimSpace(groupSlug)
+	if groupSlug == "" {
+		return Change{}, fmt.Errorf("permission: no group was named")
+	}
+	if len(wanted) == 0 {
+		return Change{}, fmt.Errorf("permission: no action was named")
+	}
+	if len(wanted) > MaxBulkSize {
+		return Change{}, fmt.Errorf("%w: %d actions were named and the limit is %d", ErrTooMany, len(wanted), MaxBulkSize)
+	}
+	for _, action := range wanted {
+		if !s.catalogue.Has(action) {
+			return Change{}, fmt.Errorf("%w: %s", ErrUnknownAction, action)
+		}
+	}
+
+	carries := append(Actions(), wanted...)
+	actor := security.Subject{ID: "bootstrap", Tenant: tenant, Actions: carries, Verified: true}
+
+	g, err := security.Authorize(ctx, s.groups, actor, PermissionGrant, Group{})
+	if err != nil {
+		return Change{}, err
+	}
+	record, err := Groups(s.db).Where("slug", "=", groupSlug).First(ctx, g)
+	if err != nil {
+		return Change{}, err
+	}
+	if record == nil {
+		return Change{}, fmt.Errorf("%w: no group of this tenant is called %s", ErrNotFound, groupSlug)
+	}
+
+	current, err := s.held(ctx, g, record.ID)
+	if err != nil {
+		return Change{}, err
+	}
+	have := make(map[string]bool, len(current))
+	for _, action := range current {
+		have[action] = true
+	}
+
+	var held []string
+	for _, action := range wanted {
+		if have[string(action)] {
+			continue
+		}
+		byGroup, err := GroupActions(s.db).Where("action", "=", string(action)).Exists(ctx, g)
+		if err != nil {
+			return Change{}, err
+		}
+		direct, err := UserActions(s.db).Where("action", "=", string(action)).Exists(ctx, g)
+		if err != nil {
+			return Change{}, err
+		}
+		if byGroup || direct {
+			held = append(held, string(action))
+		}
+	}
+	if len(held) > 0 {
+		return Change{}, fmt.Errorf("%w: %s", ErrActionHeld, strings.Join(held, ", "))
+	}
+
+	asked := append([]security.Action(nil), wanted...)
+	for _, action := range current {
+		asked = append(asked, security.Action(action))
+	}
+	return s.SetActions(ctx, actor, record.ID, asked)
+}
+
 // UpdateGroup changes what a group is called.
 //
 // It does not change what the group carries. Nothing about the name or the

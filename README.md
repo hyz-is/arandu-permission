@@ -192,6 +192,28 @@ aru permission:create-group administrators Administrators --member=<user id>
 It is refused the moment the tenant has a group, so there is no way back to it.
 Everything it writes goes through the same use cases a screen calls.
 
+### An action nobody holds yet
+
+The first group carries the actions that existed the day it was made. An
+application that declares a new action later has the same problem in small:
+nobody holds it, so nobody may grant it, because nobody hands out what they do
+not hold. The terminal has a second door for exactly that case:
+
+```bash
+aru permission:grant administrators rating.configure
+```
+
+With no `--as`, `permission:grant` is accepted only when the action is in the
+catalogue and nobody in the tenant holds it, by a group or directly. It is the
+operator of the server starting a new action, the same exception as the first
+group: an exception to there being somebody to act as, not to the rules. The
+write goes through the same use case, moves the version token and is announced
+to the listeners with `bootstrap` as the actor, and the console says it was a
+bootstrap of a new action. The moment anybody holds the action the command is
+refused with `ErrActionHeld`, and it is granted with `--as` like any other; so
+are `permission:revoke` and every other command, which never have this door. In
+code it is `Service().BootstrapActions(ctx, tenant, groupSlug, actions)`.
+
 ## Two ways a permission reaches a person
 
 Through a group, or given to them in their own right — what the reference calls

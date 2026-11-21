@@ -124,6 +124,17 @@ rejected in review. None of them is missing by accident.
 | a permission stored as a pattern, matched at decision time | `Catalogue.Match`, which expands a selector where it is written. What lands in a row is always a concrete action the catalogue holds |
 | a middleware, a helper or a screen that decides on a group name | nothing. A group is where a permission came from; it is renamed by whoever administers it and is never checked against the catalogue |
 
+## The two doors with nobody behind them
+
+`Bootstrap` (the first group) and `BootstrapActions` (`permission:grant` with no
+`--as`, for an action in the catalogue that nobody in the tenant holds, by group
+or directly) are the only service methods that act without a person. Both build
+the subject they act as, both are shut by the state rather than by a flag, and
+both write through `SetActions`, so the same policies answer, the token moves
+and the listeners hear it with `bootstrap` as the actor. Do not add a third, and
+do not widen `BootstrapActions` to an action somebody holds: that case has
+somebody to act as, and goes through `--as`.
+
 ## The four properties
 
 These are the reason the package is shaped the way it is. A change that breaks

@@ -10,6 +10,27 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-11-21
+
+### Added
+
+- `permission:grant` with no `--as` attaches an action nobody holds. The first
+  group carries the actions that existed when it was made, and an action an
+  application declares later could never be granted, because nobody holds it and
+  nobody hands out what they do not hold. With no `--as` the command now asks
+  `PermissionService.BootstrapActions`, which accepts only actions in the
+  catalogue that no group and no person in the tenant holds. It writes through
+  `SetActions`, so the policies answer, the version token moves and the
+  listeners hear it with `bootstrap` as the actor, and the console says it was a
+  bootstrap of a new action.
+- `ErrActionHeld`, returned when somebody already holds an action asked for with
+  no `--as`. The request is refused whole and is granted with `--as` by the
+  ordinary rules. `permission:revoke` and every other command still require
+  `--as`.
+- Three tests: the grant with no `--as` when nobody holds the action, its refusal
+  when a group or a person holds it, and its refusal for an action outside the
+  catalogue.
+
 ## [0.13.2] - 2026-11-20
 
 ### Fixed

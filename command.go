@@ -2,6 +2,7 @@ package permission
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -52,8 +53,9 @@ const (
 // could not have done from the panel, and an operator who wants more asks for
 // more the same way anybody else does.
 //
-// The one exception is the first group, and it is an exception to whether there
-// is anybody to act as rather than to whether the rules apply. See Bootstrap.
+// The two exceptions are the first group and an action nobody holds yet, and
+// both are exceptions to whether there is anybody to act as rather than to
+// whether the rules apply. See Bootstrap and BootstrapActions.
 func (m *Module) Commands() []console.Command {
 	commands := []console.Command{
 		{
@@ -79,9 +81,9 @@ func (m *Module) Commands() []console.Command {
 			Signature: CommandGrant +
 				" {group : The slug of the group}" +
 				" {selector* : A permission or a selector such as invoice.*}" +
-				" {--as= : Who to act as}" +
+				" {--as= : Who to act as; omitted, this attaches only permissions nobody holds yet}" +
 				" {--tenant= : The customer to write in, defaulting to the configured one}",
-			Description: "attach permissions to a group",
+			Description: "attach permissions to a group, or bootstrap a new one nobody holds",
 			Run:         m.runGrant,
 		},
 		{
@@ -262,8 +264,14 @@ func (m *Module) runRevoke(ctx context.Context, o *console.IO) error {
 // granting is the set plus what the selectors named and revoking is the set
 // minus it. Two implementations of that arithmetic would drift, and the one that
 // drifted would be the one that takes permissions away.
+//
+// Granting with no --as is the one exception, and it is an exception to whether
+// there is somebody to act as and not to the rules. See bootstrapActions.
 func (m *Module) changeActions(ctx context.Context, o *console.IO, attach bool) error {
 	tenant := m.tenantOf(o)
+	if attach && strings.TrimSpace(o.Option("as").String()) == "" {
+		return m.bootstrapActions(ctx, o, tenant)
+	}
 	actor, err := m.actorOf(ctx, o, tenant)
 	if err != nil {
 		return err
@@ -287,6 +295,39 @@ func (m *Module) changeActions(ctx context.Context, o *console.IO, attach bool) 
 		return err
 	}
 	report(o, change)
+	return nil
+}
+
+// bootstrapActions is granting with nobody to act as, for an action nobody
+// holds.
+//
+// It is the terminal of PermissionService.BootstrapActions, and it exists for
+// the same reason the first group does: an application that gained an action
+// after the first group was made has nobody who holds it, and so nobody who may
+// grant it. The service refuses it the moment anybody in the tenant holds the
+// action, by a group or directly, and refuses an action the catalogue does not
+// have; an action somebody holds is granted with --as and the ordinary rules.
+func (m *Module) bootstrapActions(ctx context.Context, o *console.IO, tenant string) error {
+	named, err := m.selected(o.Argument("selector").Slice())
+	if err != nil {
+		return err
+	}
+	slug := o.Argument("group").String()
+
+	change, err := m.svc.BootstrapActions(ctx, tenant, slug, named)
+	if err != nil {
+		if errors.Is(err, ErrActionHeld) {
+			return fmt.Errorf("%w: pass --as with somebody who holds it, which grants it by the ordinary rules", err)
+		}
+		return err
+	}
+	if change.Empty() {
+		o.Comment("nothing changed")
+		return nil
+	}
+	o.Info("bootstrapped new action(s) nobody held in %s, with no --as: added to %s: %s",
+		tenant, strings.TrimSpace(slug), strings.Join(change.Added, ", "))
+	o.Comment("this only works for an action nobody in %s holds; once somebody does, --as is required", tenant)
 	return nil
 }
 

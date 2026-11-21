@@ -264,6 +264,14 @@ var (
 	// permissions until somebody carries them; it shuts the moment somebody
 	// does, and it never opens again.
 	ErrBootstrapped = errors.New("permission: this tenant already has a group, so there is somebody to authorize as")
+
+	// ErrActionHeld is returned when a new action is asked for with nobody to
+	// act as and somebody in the tenant already holds it.
+	//
+	// It is what closes the door BootstrapActions opens: that door exists for an
+	// action nobody holds, and an action somebody holds has somebody to
+	// authorize as, so it goes through the ordinary rules.
+	ErrActionHeld = errors.New("permission: somebody in this tenant already holds the action, so there is somebody to authorize as")
 )
 
 // GroupRef is a group as something else refers to it: enough to name it on a

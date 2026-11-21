@@ -32,9 +32,10 @@ import (
 // terminal is a module over an empty, migrated database, with its commands
 // registered, and the buffers they write to.
 type terminal struct {
-	app *console.Application
-	out *bytes.Buffer
-	err *bytes.Buffer
+	module *permission.Module
+	app    *console.Application
+	out    *bytes.Buffer
+	err    *bytes.Buffer
 }
 
 // run executes one command and returns everything it printed.
@@ -68,7 +69,7 @@ func console_(t *testing.T) *terminal {
 
 	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
 	app := console.NewApplication(out, errOut, strings.NewReader("")).Add(module.Commands()...)
-	return &terminal{app: app, out: out, err: errOut}
+	return &terminal{module: module, app: app, out: out, err: errOut}
 }
 
 // TestTheFirstGroupComesFromTheTerminalAndOnlyOnce is the whole of the
@@ -324,5 +325,126 @@ func TestEveryCommandIsNamedAndDescribed(t *testing.T) {
 		if !seen[named] {
 			t.Errorf("%s is a declared name and no command answers to it", named)
 		}
+	}
+}
+
+// TestAnActionNobodyHoldsIsGrantedWithNoAs is the second door of the terminal.
+// An application gained invoice.delete after the first group was made, so
+// nobody holds it and nobody could ever grant it; the operator starts it, and it
+// is the same write a person's grant would have been.
+func TestAnActionNobodyHoldsIsGrantedWithNoAs(t *testing.T) {
+	t.Parallel()
+
+	c := console_(t)
+	if _, err := c.run(t, "permission:create-group", "administrators", "Administrators", "--member=alice"); err != nil {
+		t.Fatalf("the first group: %v", err)
+	}
+
+	// With --as the ordinary rule still holds: alice does not hold it.
+	if _, err := c.run(t, "permission:grant", "administrators", "invoice.delete", "--as=alice"); !errors.Is(err, security.ErrForbidden) {
+		t.Fatalf("alice granting what nobody holds = %v, want ErrForbidden", err)
+	}
+
+	printed, err := c.run(t, "permission:grant", "administrators", "invoice.delete")
+	if err != nil {
+		t.Fatalf("starting an action nobody holds: %v\n%s", err, printed)
+	}
+	for _, want := range []string{"bootstrapped", "invoice.delete", "administrators"} {
+		if !strings.Contains(printed, want) {
+			t.Errorf("the bootstrap printed %q, missing %q", printed, want)
+		}
+	}
+
+	// It is a real write: alice now holds it and may hand it on, by the ordinary
+	// rules.
+	if _, err := c.run(t, "permission:create-group", "editors", "Editors", "--as=alice"); err != nil {
+		t.Fatalf("alice creating a group: %v", err)
+	}
+	if printed, err := c.run(t, "permission:grant", "editors", "invoice.delete", "--as=alice"); err != nil {
+		t.Fatalf("alice granting what she now holds: %v\n%s", err, printed)
+	}
+
+	// Asked again, the group already carries it and nothing changes.
+	printed, err = c.run(t, "permission:grant", "administrators", "invoice.delete")
+	if err != nil {
+		t.Fatalf("asking again: %v\n%s", err, printed)
+	}
+	if !strings.Contains(printed, "nothing changed") {
+		t.Errorf("asking again printed %q", printed)
+	}
+}
+
+// TestAnActionSomebodyHoldsIsRefusedWithNoAs is what shuts the second door: the
+// moment anybody holds the action, there is somebody to act as.
+func TestAnActionSomebodyHoldsIsRefusedWithNoAs(t *testing.T) {
+	t.Parallel()
+
+	c := console_(t)
+	if _, err := c.run(t, "permission:create-group", "administrators", "Administrators", "--member=alice", "--member=dave"); err != nil {
+		t.Fatalf("the first group: %v", err)
+	}
+	if _, err := c.run(t, "permission:create-group", "readers", "Readers", "--as=alice"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	// Held by a group.
+	if _, err := c.run(t, "permission:grant", "readers", "permission.grant"); !errors.Is(err, permission.ErrActionHeld) {
+		t.Errorf("an action a group holds = %v, want ErrActionHeld", err)
+	}
+	// A selector that covers one action somebody holds writes nothing.
+	if _, err := c.run(t, "permission:grant", "readers", "permission.*"); !errors.Is(err, permission.ErrActionHeld) {
+		t.Errorf("a selector over held actions = %v, want ErrActionHeld", err)
+	}
+
+	// Held directly, with no group carrying it.
+	if _, err := c.run(t, "permission:create-group", "writers", "Writers", "--as=alice"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+	if _, err := c.run(t, "permission:grant", "writers", "invoice.delete"); err != nil {
+		t.Fatalf("starting the action: %v", err)
+	}
+	if _, err := c.run(t, "permission:give", "bob", "invoice.delete", "--as=alice"); err == nil {
+		t.Fatal("alice gave what she does not hold")
+	}
+	if _, err := c.run(t, "permission:assign", "writers", "alice", "--as=dave"); err != nil {
+		t.Fatalf("assigning: %v", err)
+	}
+	if _, err := c.run(t, "permission:give", "bob", "invoice.delete", "--as=alice"); err != nil {
+		t.Fatalf("giving it directly: %v", err)
+	}
+	if _, err := c.run(t, "permission:revoke", "writers", "invoice.delete", "--as=alice"); err != nil {
+		t.Fatalf("taking it off the group: %v", err)
+	}
+	if _, err := c.run(t, "permission:grant", "readers", "invoice.delete"); !errors.Is(err, permission.ErrActionHeld) {
+		t.Errorf("an action held directly = %v, want ErrActionHeld", err)
+	}
+}
+
+// TestTheNoAsGrantRefusesWhatTheCatalogueDoesNotHold keeps the door to the
+// catalogue: an action nobody declared is not an action nobody holds.
+func TestTheNoAsGrantRefusesWhatTheCatalogueDoesNotHold(t *testing.T) {
+	t.Parallel()
+
+	c := console_(t)
+	if _, err := c.run(t, "permission:create-group", "administrators", "Administrators", "--member=alice"); err != nil {
+		t.Fatalf("the first group: %v", err)
+	}
+
+	if _, err := c.run(t, "permission:grant", "administrators", "invoice.explode"); !errors.Is(err, permission.ErrNoMatch) {
+		t.Errorf("an action outside the catalogue = %v, want ErrNoMatch", err)
+	}
+	// Revoking has no such door: it still needs somebody to act as.
+	if _, err := c.run(t, "permission:revoke", "administrators", "permission.view"); err == nil {
+		t.Error("a revoke with no --as was allowed")
+	}
+	// Neither does an unknown group, and no row was written for it.
+	if _, err := c.run(t, "permission:grant", "ghosts", "invoice.delete"); !errors.Is(err, permission.ErrNotFound) {
+		t.Errorf("an unknown group = %v, want ErrNotFound", err)
+	}
+
+	// The service refuses an action the catalogue lacks as well, for a caller
+	// that does not go through a selector.
+	if _, err := c.module.Service().BootstrapActions(context.Background(), "acme", "administrators", []security.Action{"invoice.explode"}); !errors.Is(err, permission.ErrUnknownAction) {
+		t.Errorf("the service on an unknown action = %v, want ErrUnknownAction", err)
 	}
 }
