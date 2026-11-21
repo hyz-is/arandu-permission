@@ -27,6 +27,8 @@
         "apply": "Aplicar esta alteração",
         "next_page": "Próxima página",
         "search_placeholder": "identificador ou nome",
+        "slug_placeholder": "editores",
+        "keep": "manter",
         "columns": "Colunas"
     },
     "groups": {

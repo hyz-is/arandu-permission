@@ -39,7 +39,7 @@ type layout struct{}
 func (layout) Render(_ context.Context, w http.ResponseWriter, status int, name string, data any) error {
 	page, ok := data.(view.Layout)
 	if !ok {
-		return fmt.Errorf("%s was handed %T, which the layout cannot draw", name, data)
+		return renderFragment(w, status, name, data)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
@@ -52,6 +52,24 @@ func (layout) Render(_ context.Context, w http.ResponseWriter, status int, name 
 		fmt.Fprintf(&b, "<a data-login href=\"%s\">Sign in</a>\n", html.EscapeString(page.LoginLink()))
 	}
 	fmt.Fprintf(&b, "<form method=\"post\"><input type=\"hidden\" name=\"_token\" value=\"%s\"></form>\n", html.EscapeString(page.CSRFToken()))
+	_, err := w.Write([]byte(b.String()))
+	return err
+}
+
+// renderFragment draws a piece of a page, which extends no layout and so is not
+// a view.Layout. It draws what a fragment's markup draws from its data that
+// matters here: @csrf is view.CSRF, the function the compiled markup calls, and
+// it refuses data that provides no CSRFToken with the error the application
+// would log before answering 500.
+func renderFragment(w http.ResponseWriter, status int, name string, data any) error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "<div data-fragment=\"%s\"><form>", html.EscapeString(name))
+	if err := view.CSRF(&b, data); err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
+	b.WriteString("</form></div>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
 	_, err := w.Write([]byte(b.String()))
 	return err
 }

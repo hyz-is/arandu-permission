@@ -142,7 +142,7 @@ type ShowData = permission.GroupPageData
 						<a class="font-mono text-xs hover:underline" href="{{ .Prefix }}/users/{{ member }}">{{ member }}</a>
 						<label class="text-muted-foreground flex items-center gap-2 text-xs">
 							<input type="checkbox" name="value" value="{{ member }}" checked>
-							keep
+							{{ .Labels.T("control.keep") }}
 						</label>
 					</li>
 				@endforeach

@@ -416,7 +416,9 @@ type MatrixPageData struct {
 // applied.
 //
 // It is a fragment: it extends no layout, because it is swapped into a page
-// that already has one.
+// that already has one. It still holds a form, the confirmation, and a form
+// needs the token @csrf writes, so the fragment provides it through CSRFToken
+// the way the page chrome does for the screens that embed it.
 type SummaryPageData struct {
 	// Prefix is where this module answers.
 	Prefix string
@@ -440,7 +442,16 @@ type SummaryPageData struct {
 	// Fields are the values the confirmation resubmits, so that approving the
 	// summary sends the same request that produced it.
 	Fields []string
+
+	// token is the CSRF token issued for the request that drew the fragment.
+	// It is unexported so it never travels in the values a client that draws
+	// for itself receives: that answer carries the token beside them.
+	token string
 }
+
+// CSRFToken is what @csrf writes into the confirmation form: the token the
+// middleware that protects forms issued for the request this fragment answers.
+func (s SummaryPageData) CSRFToken() string { return s.token }
 
 // MembersPageData is the listing of everybody this module has written a row
 // about.
@@ -619,6 +630,7 @@ func (m *Module) summary(ctx *fhttp.Context) error {
 		Kind:   kind,
 		Change: change,
 		Fields: fields,
+		token:  m.token(ctx),
 	})
 }
 
@@ -762,6 +774,7 @@ func (m *Module) memberSummary(ctx *fhttp.Context) error {
 		Kind:   kindActions,
 		Change: change,
 		Fields: fields,
+		token:  m.token(ctx),
 	})
 }
 
@@ -907,6 +920,13 @@ func (m *Module) page(ctx *fhttp.Context, title string) hview.Page {
 		page.UserName = m.cfg.AccountName(ctx.Ctx(), subject)
 	}
 	return page
+}
+
+// token is the CSRF token of the request, for a fragment that holds a form and
+// has no page chrome to carry it. It is read the way page reads it, so a
+// fragment and a screen draw the same token.
+func (m *Module) token(ctx *fhttp.Context) string {
+	return hview.New(ctx, "").CSRFToken()
 }
 
 // answer turns what the service refused into something the client can act on.

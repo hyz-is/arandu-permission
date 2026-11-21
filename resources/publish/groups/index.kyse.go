@@ -146,7 +146,7 @@ func groupsNextURL(data IndexData) string {
 				{!! components.Input(components.InputProps{
 					Name:        "slug",
 					ID:          "slug",
-					Placeholder: "editors",
+					Placeholder: .Labels.T("control.slug_placeholder"),
 					Required:    true,
 				}) !!}
 			</div>
