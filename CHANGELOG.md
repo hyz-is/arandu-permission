@@ -10,8 +10,42 @@ a release is corrected by another release and never by moving a tag.
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-11-20
+
+### Fixed
+
+- The summary shown before a bulk write no longer answers 500. Both the group's
+  summary (`POST /groups/{id}/summary`, for permissions and for members) and the
+  person's (`POST /users/{id}/summary`) draw a confirmation form with `@csrf`,
+  and `SummaryPageData`, being a fragment that embeds no page chrome, had no
+  `CSRFToken() string`, so the view failed with "@csrf needs the page data to
+  provide the token". `SummaryPageData` now answers it with the token the
+  middleware issued for the request. The token is not a field of the values a
+  client that draws for itself receives; that answer already carries it beside
+  them.
+- Two sentences of the published views were fixed English in every language:
+  the word beside each member's checkbox on the group screen ("keep") and the
+  example in the slug field of the new-group form ("editors"). They now read the
+  catalogue lines `control.keep` and `control.slug_placeholder`, added in `en`
+  and `pt-BR`.
+
+### Added
+
+- A test that serves both summaries behind the CSRF middleware and a test that
+  holds every published view with a form to page data that provides the token.
+
+## [0.13.1] - 2026-11-15
+
 ### Changed
 
+- Requires hesape v0.109.0, framework v0.71.0 and Kyse v0.53.1.
+
+## [0.13.0] - 2026-11-15
+
+### Changed
+
+- The published group, user and matrix summary views write their attributes the
+  way YPY reads them (`ypy-put`, `ypy-post`, `ypy-target`, `ypy-swap`).
 - `Labels.TableLines` fills `RowsOne` and `RowsMany`, the footer in the singular
   and the plural, from the new catalogue lines `table.rows_one` and
   `table.rows_many` in `en` and `pt-BR`. The published list views keep the

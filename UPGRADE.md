@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## v0.13.2
+
+Nothing to change in the code that wires the module. `SummaryPageData` gained
+`CSRFToken() string`, which fixes the 500 on the summaries of a group and of a
+person, and no field or signature was removed. The fix is in the package, so a
+project that published the views does not republish for it.
+
+Two published views now read two new catalogue lines instead of English text:
+`permission.control.keep` (`groups/show`) and `permission.control.slug_placeholder`
+(`groups/index`), both in `en` and `pt-BR`. A project that published those views
+keeps its own text until it republishes them or brings the two lines across by
+hand; one that overrides the catalogue adds the two keys under the same names.
+
+## v0.13.1
+
+Raises the floors to hesape v0.109.0, framework v0.71.0 and Kyse v0.53.1. Run
+`go get github.com/hyz-is/arandu-permission@v0.13.1` and `go mod tidy`.
+
+## v0.13.0
+
 ### The published views speak YPY
 
 The group, user and matrix summary views this package publishes
